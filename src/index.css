@@ -475,6 +475,44 @@ table.data tr.best-row {
   background: rgba(43, 184, 168, 0.08);
 }
 
+.sheet-browser {
+  max-height: 520px;
+}
+
+.sheet-table th.sheet-rowhead {
+  width: 2.2rem;
+  text-align: center;
+  background: #e8eef2;
+  color: var(--ink-muted);
+}
+
+.sheet-table td.sheet-edit {
+  background: #fff8d6;
+  padding: 0;
+}
+
+.sheet-table td.sheet-edit input {
+  width: 100%;
+  min-width: 88px;
+  border: 0;
+  background: transparent;
+  padding: 0.55rem 0.45rem;
+  border-radius: 0;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.85rem;
+}
+
+.sheet-table td.sheet-edit input:focus {
+  outline: 2px solid var(--teal);
+  outline-offset: -2px;
+  background: #fff;
+}
+
+.sheet-table td.sheet-locked {
+  background: #fafafa;
+  color: var(--ink);
+}
+
 .tabs {
   display: flex;
   flex-wrap: wrap;

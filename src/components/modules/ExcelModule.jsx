@@ -21,10 +21,10 @@ export default function ExcelModule({ setSkillExact, markExercise, progress }) {
   return (
     <div className="panel">
       <section className="hero">
-        <h1>🖥️ Excel — pratique no Excel de verdade</h1>
+        <h1>🖥️ Excel — pratique fórmulas de verdade</h1>
         <p>
-          Baixe a planilha, abra no Excel (ou Sheets), preencha as células amarelas com fórmulas e
-          envie de volta para o site corrigir automaticamente.
+          Não precisa de chave do Office. Treine no navegador (recomendado) ou use Google Sheets.
+          Células amarelas = onde você digita as fórmulas.
         </p>
       </section>
 
