@@ -23,11 +23,13 @@ export default function App() {
   const {
     progress,
     percent,
+    readiness,
+    skillScores,
     toggleDay,
-    markModule,
-    setQuizScore,
-    markCotacao,
-    markSim,
+    setSkillExact,
+    markExercise,
+    savePesquisa,
+    isModuleDone,
     reset,
   } = useProgress()
 
@@ -37,33 +39,43 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  const shared = { progress, setSkillExact, markExercise }
+
   let content = null
   if (view === 'home') {
-    content = <Home onNavigate={navigate} progress={progress} toggleDay={toggleDay} />
-  } else if (view === 'plano') {
-    content = <PlanoModule progress={progress} toggleDay={toggleDay} onNavigate={navigate} />
-  } else if (view === 'excel') {
     content = (
-      <ExcelModule
-        markModule={markModule}
-        onCompleteCotacao={() => {
-          markCotacao()
-          markModule('excel')
-        }}
+      <Home
+        onNavigate={navigate}
+        progress={progress}
+        toggleDay={toggleDay}
+        skillScores={skillScores}
+        percent={percent}
+        readiness={readiness}
       />
     )
+  } else if (view === 'plano') {
+    content = (
+      <PlanoModule
+        progress={progress}
+        toggleDay={toggleDay}
+        onNavigate={navigate}
+        skillScores={skillScores}
+      />
+    )
+  } else if (view === 'excel') {
+    content = <ExcelModule {...shared} />
   } else if (view === 'pesquisa') {
-    content = <PesquisaModule markModule={markModule} />
+    content = <PesquisaModule {...shared} savePesquisa={savePesquisa} />
   } else if (view === 'email') {
-    content = <EmailModule markModule={markModule} />
+    content = <EmailModule {...shared} />
   } else if (view === 'recebimento') {
-    content = <RecebimentoModule markModule={markModule} />
+    content = <RecebimentoModule {...shared} />
   } else if (view === 'materiais') {
-    content = <MateriaisModule markModule={markModule} setQuizScore={setQuizScore} />
+    content = <MateriaisModule {...shared} />
   } else if (view === 'mentalidade') {
-    content = <MentalidadeModule markModule={markModule} setQuizScore={setQuizScore} />
+    content = <MentalidadeModule {...shared} />
   } else if (view === 'simulacao') {
-    content = <SimulacaoModule progress={progress} markSim={markSim} />
+    content = <SimulacaoModule {...shared} />
   }
 
   return (
@@ -73,7 +85,7 @@ export default function App() {
       <aside className={`sidebar ${menuOpen ? 'open' : ''}`}>
         <div className="brand">
           <strong>Treino Compras</strong>
-          <span>Preparação para o serviço</span>
+          <span>Pronto para executar o básico</span>
         </div>
 
         <div className="nav-group">
@@ -91,7 +103,7 @@ export default function App() {
         </div>
 
         <div className="nav-group">
-          <div className="nav-label">Módulos</div>
+          <div className="nav-label">Prática</div>
           {modules.map((m) => (
             <button
               key={m.id}
@@ -100,18 +112,18 @@ export default function App() {
             >
               <span className="icon">{m.icon}</span>
               {m.title}
-              {progress.completedModules.includes(m.id) ? ' ✓' : ''}
+              {isModuleDone(m.id) ? ' ✓' : ` ${skillScores[m.id] || 0}%`}
             </button>
           ))}
         </div>
 
         <div className="progress-card">
-          <h4>Progresso geral</h4>
+          <h4>Prontidão</h4>
           <div className="progress-bar">
             <span style={{ width: `${percent}%` }} />
           </div>
           <p style={{ margin: '0.55rem 0 0', fontSize: '0.85rem', color: 'rgba(242,245,247,0.7)' }}>
-            {percent}% concluído
+            {percent}% · {readiness.label}
           </p>
           <button
             className="btn btn-ghost"

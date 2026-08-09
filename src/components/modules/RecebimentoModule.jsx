@@ -1,30 +1,37 @@
 import { useMemo, useState } from 'react'
 import { fluxo, receivingChecks, receivingScenarios } from '../../data/content'
+import { receivingExtra, receivingOptionLabels } from '../../data/practice'
 
-const OPTIONS = [
-  { id: 'faltam-luvas', label: 'Faltam 2 luvas nitrílicas G' },
-  { id: 'produto-errado', label: 'Produto errado: veio mangueira de água em vez de hidráulica' },
-  { id: 'ok', label: 'Sem divergência' },
-  { id: 'nf', label: 'Nota fiscal não bate' },
+const BASE_CASES = [
+  {
+    ...receivingScenarios[0],
+    problemas: ['faltam-luvas'],
+    options: ['faltam-luvas', 'produto-errado', 'ok', 'nf'],
+  },
+  {
+    ...receivingScenarios[1],
+    problemas: ['produto-errado'],
+    options: ['faltam-luvas', 'produto-errado', 'ok', 'danificado'],
+  },
+  {
+    ...receivingScenarios[2],
+    problemas: ['ok'],
+    options: ['faltam-luvas', 'produto-errado', 'ok', 'nf'],
+  },
+  ...receivingExtra,
 ]
 
-const EXPECTED_BY_CASE = {
-  1: ['faltam-luvas'],
-  2: ['produto-errado'],
-  3: ['ok'],
-}
-
-export default function RecebimentoModule({ markModule }) {
+export default function RecebimentoModule({ progress, setSkillExact, markExercise }) {
   const [scenario, setScenario] = useState(0)
   const [answers, setAnswers] = useState([])
   const [revealed, setRevealed] = useState(false)
-  const current = receivingScenarios[scenario]
-  const expectedIds = EXPECTED_BY_CASE[current.id]
+  const current = BASE_CASES[scenario]
+  const expected = current.problemas
 
   const isCorrect = useMemo(() => {
-    if (answers.length !== expectedIds.length) return false
-    return expectedIds.every((id) => answers.includes(id))
-  }, [answers, expectedIds])
+    if (answers.length !== expected.length) return false
+    return expected.every((id) => answers.includes(id))
+  }, [answers, expected])
 
   function toggleAnswer(id) {
     setAnswers((prev) =>
@@ -33,24 +40,24 @@ export default function RecebimentoModule({ markModule }) {
     setRevealed(false)
   }
 
+  const passedCount = BASE_CASES.filter((c) => progress.exerciseDone[`rec-${c.id}`]).length
+
   return (
     <div className="panel">
       <section className="hero">
-        <h1>📦 Recebimento e conferência</h1>
-        <p>
-          Não basta ver “chegou uma caixa”. Compare o que deveria chegar com o que realmente chegou.
-        </p>
+        <h1>📦 Conferência na prática</h1>
+        <p>Compare pedido × mercadoria × NF. Aprove só quando achar a divergência certa.</p>
       </section>
 
       <div className="light-panel">
-        <h2 style={{ marginTop: 0 }}>Fluxo completo</h2>
+        <h2 style={{ marginTop: 0 }}>Fluxo</h2>
         <div className="flow">
           {fluxo.map((step) => (
             <span key={step}>{step}</span>
           ))}
         </div>
 
-        <h3>Os 6 pontos da conferência</h3>
+        <h3>Os 6 pontos</h3>
         <div className="term-grid">
           {receivingChecks.map((c) => (
             <article key={c.id} className="mini-card">
@@ -60,9 +67,9 @@ export default function RecebimentoModule({ markModule }) {
           ))}
         </div>
 
-        <h3>Simulador de conferência</h3>
+        <h3>Casos ({passedCount}/{BASE_CASES.length} aprovados)</h3>
         <div className="tabs">
-          {receivingScenarios.map((s, i) => (
+          {BASE_CASES.map((s, i) => (
             <button
               key={s.id}
               className={`tab ${scenario === i ? 'active' : ''}`}
@@ -72,7 +79,7 @@ export default function RecebimentoModule({ markModule }) {
                 setRevealed(false)
               }}
             >
-              Caso {i + 1}
+              {progress.exerciseDone[`rec-${s.id}`] ? '✓ ' : ''}Caso {i + 1}
             </button>
           ))}
         </div>
@@ -83,8 +90,8 @@ export default function RecebimentoModule({ markModule }) {
             <ul>
               {current.pedido.map((p) => (
                 <li key={p.item}>
-                  {p.qtd}
-                  {p.unidade ? ` ${p.unidade}` : ' un.'} — {p.item}
+                  {p.qtd}{p.unidade ? ` ${p.unidade}` : ' un.'} — {p.item}
+                  {p.preco != null ? ` (R$ ${p.preco})` : ''}
                 </li>
               ))}
             </ul>
@@ -94,65 +101,64 @@ export default function RecebimentoModule({ markModule }) {
             <ul>
               {current.chegou.map((p) => (
                 <li key={p.item}>
-                  {p.qtd}
-                  {p.unidade ? ` ${p.unidade}` : ' un.'} — {p.item}
+                  {p.qtd}{p.unidade ? ` ${p.unidade}` : ' un.'} — {p.item}
+                  {p.preco != null ? ` (R$ ${p.preco})` : ''}
                 </li>
               ))}
             </ul>
+            {current.nf && (
+              <p className="muted" style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
+                NF: itens {current.nf.itensOk ? 'ok' : 'divergente'} · valores {current.nf.valorOk ? 'ok' : 'divergente'}
+                {current.nf.obs ? ` · ${current.nf.obs}` : ''}
+              </p>
+            )}
+            {current.estado && current.estado !== 'ok' && (
+              <p className="chip-bad chip">Estado: {current.estado}</p>
+            )}
           </div>
         </div>
 
         <p style={{ marginTop: '1rem' }}>
-          <strong>O que você identificou?</strong> (marque só o que se aplica a este caso)
+          <strong>Marque só o que se aplica</strong>
         </p>
-        {OPTIONS.map((opt) => (
-          <label key={opt.id} className="check-row" style={{ cursor: 'pointer' }}>
+        {(current.options || []).map((id) => (
+          <label key={id} className="check-row" style={{ cursor: 'pointer' }}>
             <input
               type="checkbox"
-              checked={answers.includes(opt.id)}
-              onChange={() => toggleAnswer(opt.id)}
+              checked={answers.includes(id)}
+              onChange={() => toggleAnswer(id)}
             />
-            <span>{opt.label}</span>
+            <span>{receivingOptionLabels[id] || id}</span>
           </label>
         ))}
 
         <button
           className="btn btn-dark"
           style={{ marginTop: '0.8rem' }}
-          onClick={() => setRevealed(true)}
           disabled={answers.length === 0}
+          onClick={() => {
+            setRevealed(true)
+            if (isCorrect) {
+              markExercise(`rec-${current.id}`, true, 'recebimento', 0)
+              const next = passedCount + (progress.exerciseDone[`rec-${current.id}`] ? 0 : 1)
+              setSkillExact('recebimento', Math.min(100, Math.round((next / BASE_CASES.length) * 100)))
+            }
+          }}
         >
-          Conferir resposta
+          Conferir
         </button>
 
         {revealed && (
           <div className={`feedback ${isCorrect ? 'ok' : 'bad'}`}>
             {isCorrect ? (
-              <>
-                Certo! Gabarito:{' '}
-                <strong>
-                  {current.problemas.length === 0
-                    ? 'sem divergência'
-                    : current.problemas.join(' · ')}
-                </strong>
-              </>
+              <>Certo! {expected.map((e) => receivingOptionLabels[e]).join(' · ')}</>
             ) : (
               <>
-                Ainda não. Gabarito deste caso:{' '}
-                <strong>
-                  {current.problemas.length === 0
-                    ? 'sem divergência'
-                    : current.problemas.join(' · ')}
-                </strong>
-                . Marque apenas o problema real (ou “Sem divergência” se tudo bater).
+                Ainda não. Gabarito: {expected.map((e) => receivingOptionLabels[e]).join(' · ')}
               </>
             )}
           </div>
         )}
-
-        <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={() => markModule('recebimento')}>
-          Marcar módulo Recebimento como estudado
-        </button>
       </div>
     </div>
   )

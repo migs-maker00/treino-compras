@@ -1,13 +1,18 @@
 import { useState } from 'react'
 
-export default function Quiz({ questions, onFinish }) {
+export default function Quiz({ questions, onFinish, passRatio = 0.7 }) {
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState(null)
   const [score, setScore] = useState(0)
   const [done, setDone] = useState(false)
   const [finalScore, setFinalScore] = useState(0)
 
+  if (!questions?.length) {
+    return <div className="feedback bad">Nenhuma pergunta disponível neste quiz.</div>
+  }
+
   const current = questions[index]
+  const passMark = Math.ceil(questions.length * passRatio)
 
   function choose(i) {
     if (selected !== null) return
@@ -22,7 +27,7 @@ export default function Quiz({ questions, onFinish }) {
     if (isLast) {
       setFinalScore(nextScore)
       setDone(true)
-      onFinish?.(nextScore, questions.length)
+      onFinish?.(nextScore, questions.length, nextScore >= passMark)
       return
     }
 
@@ -32,14 +37,13 @@ export default function Quiz({ questions, onFinish }) {
   }
 
   if (done) {
+    const passed = finalScore >= passMark
     return (
-      <div className="feedback ok">
+      <div className={`feedback ${passed ? 'ok' : 'bad'}`}>
         Resultado: <strong>{finalScore}/{questions.length}</strong>
-        {finalScore === questions.length
-          ? ' — excelente!'
-          : finalScore >= Math.ceil(questions.length * 0.7)
-            ? ' — bom caminho. Revise os erros e tente de novo.'
-            : ' — revise o módulo e refaça o quiz.'}
+        {passed
+          ? ' — aprovado! Você demonstrou o básico.'
+          : ` — ainda não. Precisa de pelo menos ${passMark} acertos. Revise e refaça.`}
         <div style={{ marginTop: '0.8rem' }}>
           <button
             className="btn btn-soft"
@@ -61,7 +65,7 @@ export default function Quiz({ questions, onFinish }) {
   return (
     <div>
       <p className="muted" style={{ marginTop: 0 }}>
-        Pergunta {index + 1} de {questions.length}
+        Pergunta {index + 1} de {questions.length} · aprovação: {passMark}+ acertos
       </p>
       <h3 style={{ marginTop: 0 }}>{current.q}</h3>
       {current.options.map((opt, i) => {

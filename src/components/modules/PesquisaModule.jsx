@@ -1,85 +1,78 @@
 import { useMemo, useState } from 'react'
 import { searchTips } from '../../data/content'
+import { scoreSearchQuery, searchMissions } from '../../data/practice'
 
-const products = [
-  'mangueira hidráulica 1/2" alta pressão 10 metros',
-  'parafuso sextavado inox M8 x 50 mm',
-  'luva nitrílica tamanho G sem pó',
-  'disco de corte 4.1/2" para inox',
-  'cabo elétrico 2,5 mm² flexível 100m',
-  'abraçadeira inox 1/2"',
-  'óculos de proteção incolor',
-  'disjuntor bipolar 20A',
-  'chave combinada 13 mm CR-V',
-  'selante PU cinza 400g',
-]
-
-export default function PesquisaModule({ markModule }) {
+export default function PesquisaModule({ progress, savePesquisa, setSkillExact, markExercise }) {
+  const [missionId, setMissionId] = useState(searchMissions[0].id)
   const [query, setQuery] = useState('')
-  const [picked, setPicked] = useState([])
-  const [notes, setNotes] = useState({})
+  const [checked, setChecked] = useState(false)
+  const [picked, setPicked] = useState(progress.pesquisaPicked || [])
+  const [notes, setNotes] = useState(progress.pesquisaNotes || {})
 
-  const tip = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return null
-    if (q.split(/\s+/).length <= 1) {
-      return {
-        type: 'bad',
-        text: 'Muito genérico. Acrescente tipo, medida, material ou norma.',
-      }
-    }
-    if (q.length < 18) {
-      return {
-        type: 'warn',
-        text: 'Melhorando… ainda dá para especificar mais (pressão, tamanho, material).',
-      }
-    }
-    return {
-      type: 'ok',
-      text: 'Boa pesquisa: específica o suficiente para achar o item certo.',
-    }
-  }, [query])
+  const mission = searchMissions.find((m) => m.id === missionId)
+  const result = useMemo(() => scoreSearchQuery(query, mission), [query, mission])
+
+  const catalog = searchMissions.map((m) => m.target)
+
+  function persist(nextPicked, nextNotes) {
+    setPicked(nextPicked)
+    setNotes(nextNotes)
+    savePesquisa(nextPicked, nextNotes)
+  }
 
   function toggleProduct(p) {
-    setPicked((prev) => (prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]))
+    const next = picked.includes(p) ? picked.filter((x) => x !== p) : [...picked, p]
+    persist(next, notes)
   }
+
+  const notesFilled = picked.filter((p) => (notes[p] || '').trim().length >= 20).length
 
   return (
     <div className="panel">
       <section className="hero">
-        <h1>🔎 Pesquisa e cotação de fornecedores</h1>
+        <h1>🔎 Pesquisa de verdade</h1>
         <p>
-          Seu chefe falou em “ficar pesquisando no PC fornecedores”. Isso é habilidade profissional:
-          especificar bem, comparar e decidir.
+          Treino: transformar pedido vago em busca específica — e anotar fornecedores como no trabalho.
         </p>
       </section>
 
       <div className="light-panel">
-        <h2 style={{ marginTop: 0 }}>Pesquise como profissional</h2>
+        <h2 style={{ marginTop: 0 }}>Missão: reescreva a busca</h2>
+        <div className="tabs">
+          {searchMissions.map((m) => (
+            <button
+              key={m.id}
+              className={`tab ${missionId === m.id ? 'active' : ''}`}
+              onClick={() => {
+                setMissionId(m.id)
+                setQuery('')
+                setChecked(false)
+              }}
+            >
+              “{m.request}”
+            </button>
+          ))}
+        </div>
+
         <div className="compare">
           <div className="bad">
-            <strong>Evite</strong>
-            <ul>
-              {searchTips.bad.map((b) => (
-                <li key={b}>{b}</li>
-              ))}
-            </ul>
+            <strong>Pedido vago</strong>
+            <p>{mission.request}</p>
           </div>
           <div className="good">
-            <strong>Prefira</strong>
-            <ul>
-              {searchTips.good.map((g) => (
-                <li key={g}>{g}</li>
-              ))}
-            </ul>
+            <strong>Alvo profissional</strong>
+            <p>{mission.target}</p>
           </div>
         </div>
 
-        <h3>Treino rápido de busca</h3>
+        <h3>Sua busca</h3>
         <input
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder='Digite como você pesquisaria… ex: mangueira hidráulica 1/2"'
+          onChange={(e) => {
+            setQuery(e.target.value)
+            setChecked(false)
+          }}
+          placeholder="Digite como pesquisaria no Google / fornecedor…"
           style={{
             width: '100%',
             padding: '0.8rem 0.9rem',
@@ -87,32 +80,51 @@ export default function PesquisaModule({ markModule }) {
             border: '1px solid var(--line)',
           }}
         />
-        {tip && (
-          <div className={`feedback ${tip.type === 'ok' ? 'ok' : tip.type === 'bad' ? 'bad' : ''}`}>
-            {tip.text}
+        <button
+          className="btn btn-dark"
+          style={{ marginTop: '0.7rem' }}
+          onClick={() => {
+            setChecked(true)
+            if (result.passed) {
+              markExercise(`pesquisa-${mission.id}`, true, 'pesquisa', 12)
+              const done = searchMissions.filter((m) => progress.exerciseDone[`pesquisa-${m.id}`] || m.id === mission.id).length
+              // approximate after mark
+              setSkillExact('pesquisa', Math.min(100, 20 + done * 12 + (notesFilled >= 5 ? 20 : 0)))
+            }
+          }}
+        >
+          Avaliar especificações
+        </button>
+
+        {checked && (
+          <div className={`feedback ${result.passed ? 'ok' : 'bad'}`}>
+            Score: <strong>{result.score}/100</strong>
+            <div>Componentes encontrados: {result.reqHits.join(', ') || 'nenhum'}</div>
+            {!result.passed && (
+              <div>Falta especificar: {result.missing.join(', ')}</div>
+            )}
           </div>
         )}
 
         <h3>Checklist do que anotar</h3>
         <div className="term-grid">
           {searchTips.checklist.map((c) => (
-            <div key={c} className="mini-card">
-              {c}
-            </div>
+            <div key={c} className="mini-card">{c}</div>
           ))}
         </div>
 
-        <h3>Exercício do Dia 3</h3>
+        <h3>Caderno de fornecedores (salva no navegador)</h3>
         <p className="muted">
-          Escolha 10 produtos. Para cada um, anote 3 fornecedores (pode pesquisar de verdade no Google
-          depois). Aqui você marca e registra o melhor.
+          Escolha produtos e anote 3 fornecedores com preço, frete e prazo. Precisa de pelo menos 5
+          anotações úteis para avançar a habilidade.
         </p>
         <div className="cat-grid">
-          {products.map((p) => {
+          {catalog.map((p) => {
             const active = picked.includes(p)
             return (
               <button
                 key={p}
+                type="button"
                 className="mini-card"
                 style={{
                   cursor: 'pointer',
@@ -125,10 +137,13 @@ export default function PesquisaModule({ markModule }) {
                 <strong>{active ? '✓ ' : ''}{p}</strong>
                 {active && (
                   <textarea
-                    placeholder="Fornecedor A / B / C — preço, frete, prazo…"
+                    placeholder="Forn. A/B/C — preço, frete, prazo, disponibilidade…"
                     value={notes[p] || ''}
                     onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => setNotes((n) => ({ ...n, [p]: e.target.value }))}
+                    onChange={(e) => {
+                      const next = { ...notes, [p]: e.target.value }
+                      persist(picked, next)
+                    }}
                     style={{
                       width: '100%',
                       marginTop: '0.55rem',
@@ -144,10 +159,17 @@ export default function PesquisaModule({ markModule }) {
           })}
         </div>
         <p style={{ marginTop: '0.9rem' }}>
-          Selecionados: <strong>{picked.length}/10</strong>
+          Anotações úteis: <strong>{notesFilled}/5</strong>
         </p>
-        <button className="btn btn-dark" onClick={() => markModule('pesquisa')}>
-          Marcar módulo Pesquisa como estudado
+        <button
+          className="btn btn-primary"
+          disabled={notesFilled < 5}
+          onClick={() => {
+            markExercise('pesquisa-caderno', true, 'pesquisa', 0)
+            setSkillExact('pesquisa', Math.max(progress.skillScores.pesquisa || 0, 75))
+          }}
+        >
+          Validar caderno (mín. 5 anotações)
         </button>
       </div>
     </div>

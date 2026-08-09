@@ -1,13 +1,17 @@
-# Treino Compras
+# Treino Compras (V2)
 
-Site interativo para se preparar para trabalhar com **compras**, **fornecedores**, **Excel**, **e-mail profissional** e **conferência de mercadorias**.
+Objetivo: **chegar no primeiro dia sabendo executar o básico** de compras — não só ler conceitos.
 
-## O que tem no site
+## Prática incluída
 
-- Plano de 7 dias com progresso salvo no navegador
-- Módulos: Excel, pesquisa/cotação, e-mail, recebimento, materiais e mentalidade de comprador
-- Simulador de planilha de cotação (20 produtos)
-- Quizzes e simulações de escolha de fornecedor
+- Excel: digitar fórmulas + decidir cotação (preço/frete/prazo/qualidade/estoque) + checklist para reproduzir no Excel/Sheets
+- Pesquisa: avaliar especificações da busca + caderno de fornecedores (salvo no navegador)
+- E-mail: missões com checklist estrutural
+- Recebimento: 10 casos de conferência
+- Materiais: decodificar especificação do produto
+- Mentalidade: escrever perguntas de comprador
+- Simulação: “dia de trabalho” + casos clássicos
+- Progresso por **skill scores** (domínio), não por clique
 
 ## Como rodar
 
@@ -16,11 +20,14 @@ npm install
 npm run dev
 ```
 
-Abra o endereço mostrado no terminal (geralmente `http://localhost:5173`).
-
-## Build de produção
+## Antes de publicar
 
 ```bash
-npm run build
-npm run preview
+npm run check
 ```
+
+Isso roda `lint` + `build`.
+
+## Stack
+
+React + Vite. Sem router, sem backend, progresso em `localStorage`.

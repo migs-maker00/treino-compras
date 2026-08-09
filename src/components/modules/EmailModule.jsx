@@ -1,99 +1,147 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { emailTemplates, glossary } from '../../data/content'
+import { emailMissions } from '../../data/practice'
 
-export default function EmailModule({ markModule }) {
-  const [active, setActive] = useState(emailTemplates[0].id)
-  const [draft, setDraft] = useState('')
-  const [feedback, setFeedback] = useState(null)
-  const current = emailTemplates.find((t) => t.id === active)
+export default function EmailModule({ progress, setSkillExact, markExercise }) {
+  const [missionId, setMissionId] = useState(emailMissions[0].id)
+  const [subject, setSubject] = useState('')
+  const [body, setBody] = useState('')
+  const [checked, setChecked] = useState(false)
+  const [showModel, setShowModel] = useState(false)
 
-  function evaluate() {
-    const text = draft.toLowerCase()
-    const checks = [
-      { ok: /cotação|orcamento|orçamento|pedido|entrega|status/.test(text), label: 'Objetivo claro no texto' },
-      { ok: /preço|prazo|dispon|pagamento|confirma/.test(text), label: 'Pediu informações úteis' },
-      { ok: text.length > 80, label: 'Texto com tamanho suficiente' },
-      { ok: /obrigad|atenciosamente|bom dia|boa tarde/.test(text), label: 'Tom profissional' },
-    ]
-    const score = checks.filter((c) => c.ok).length
-    setFeedback({ score, checks })
-  }
+  const mission = emailMissions.find((m) => m.id === missionId)
+  const model = emailTemplates[emailMissions.findIndex((m) => m.id === missionId)] || emailTemplates[0]
+
+  const evaluation = useMemo(() => {
+    const results = mission.checks.map((c) => ({
+      ...c,
+      ok: c.test(body, subject),
+    }))
+    const okCount = results.filter((r) => r.ok).length
+    const score = Math.round((okCount / results.length) * 100)
+    return {
+      results,
+      okCount,
+      score,
+      passed: okCount >= Math.ceil(results.length * 0.8),
+    }
+  }, [body, subject, mission])
 
   return (
     <div className="panel">
       <section className="hero">
-        <h1>📧 E-mail profissional</h1>
-        <p>Não precisa escrever “bonito”. Precisa escrever claro: o que quer, o que é o item, o que o fornecedor deve responder.</p>
+        <h1>📧 E-mail que resolve</h1>
+        <p>Escreva claro: produto, especificação, quantidade e o que o fornecedor precisa responder.</p>
       </section>
 
       <div className="light-panel">
         <div className="tabs">
-          {emailTemplates.map((t) => (
+          {emailMissions.map((m) => (
             <button
-              key={t.id}
-              className={`tab ${active === t.id ? 'active' : ''}`}
-              onClick={() => setActive(t.id)}
+              key={m.id}
+              className={`tab ${missionId === m.id ? 'active' : ''}`}
+              onClick={() => {
+                setMissionId(m.id)
+                setSubject('')
+                setBody('')
+                setChecked(false)
+                setShowModel(false)
+              }}
             >
-              {t.title}
+              {m.title}
             </button>
           ))}
         </div>
 
-        <p>
-          <strong>Assunto:</strong> {current.subject}
-        </p>
-        <div className="email-box">{current.body}</div>
+        <div className="mini-card" style={{ marginBottom: '1rem' }}>
+          <span className="chip">Missão</span>
+          <p style={{ margin: '0.5rem 0 0' }}>{mission.brief}</p>
+        </div>
 
-        <h3>Treine você mesmo</h3>
-        <p className="muted">Reescreva um e-mail com suas palavras (ou adapte o modelo).</p>
-        <textarea
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Escreva aqui seu e-mail…"
+        <label className="muted">Assunto</label>
+        <input
+          value={subject}
+          onChange={(e) => {
+            setSubject(e.target.value)
+            setChecked(false)
+          }}
+          placeholder="Assunto do e-mail"
           style={{
             width: '100%',
-            minHeight: 160,
+            padding: '0.7rem 0.85rem',
+            borderRadius: 12,
+            border: '1px solid var(--line)',
+            marginBottom: '0.7rem',
+          }}
+        />
+        <label className="muted">Corpo</label>
+        <textarea
+          value={body}
+          onChange={(e) => {
+            setBody(e.target.value)
+            setChecked(false)
+          }}
+          placeholder="Escreva o e-mail com suas palavras…"
+          style={{
+            width: '100%',
+            minHeight: 180,
             borderRadius: 12,
             border: '1px solid var(--line)',
             padding: '0.85rem',
           }}
         />
+
         <div style={{ marginTop: '0.7rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button className="btn btn-dark" onClick={evaluate}>
-            Avaliar meu texto
+          <button
+            className="btn btn-dark"
+            onClick={() => {
+              setChecked(true)
+              if (evaluation.passed) {
+                markExercise(`email-${mission.id}`, true, 'email', 0)
+                const doneCount = emailMissions.filter(
+                  (m) => progress.exerciseDone[`email-${m.id}`] || m.id === mission.id,
+                ).length
+                setSkillExact('email', Math.min(100, 25 + doneCount * 25))
+              }
+            }}
+          >
+            Avaliar checklist
           </button>
-          <button className="btn btn-soft" onClick={() => setDraft(current.body)}>
-            Copiar modelo para editar
+          <button className="btn btn-soft" onClick={() => setShowModel((v) => !v)}>
+            {showModel ? 'Ocultar modelo' : 'Ver modelo (só depois de tentar)'}
           </button>
         </div>
-        {feedback && (
-          <div className={`feedback ${feedback.score >= 3 ? 'ok' : 'bad'}`}>
-            Pontuação: {feedback.score}/4
+
+        {checked && (
+          <div className={`feedback ${evaluation.passed ? 'ok' : 'bad'}`}>
+            {evaluation.score}% · {evaluation.okCount}/{mission.checks.length} itens
             <ul>
-              {feedback.checks.map((c) => (
-                <li key={c.label}>
-                  {c.ok ? '✓' : '✗'} {c.label}
+              {evaluation.results.map((r) => (
+                <li key={r.id}>
+                  {r.ok ? '✓' : '✗'} {r.label}
                 </li>
               ))}
             </ul>
+            {!evaluation.passed && <div>Precisa de ~80% do checklist para aprovar.</div>}
           </div>
         )}
 
-        <h3>Termos que você precisa reconhecer</h3>
+        {showModel && (
+          <div style={{ marginTop: '1rem' }}>
+            <p><strong>Modelo:</strong> {model.subject}</p>
+            <div className="email-box">{model.body}</div>
+          </div>
+        )}
+
+        <h3>Glossário rápido</h3>
         <div className="term-grid">
           {glossary.map((g) => (
             <article key={g.term} className="mini-card">
               <strong>{g.term}</strong>
-              <p className="muted" style={{ margin: '0.35rem 0 0' }}>
-                {g.def}
-              </p>
+              <p className="muted" style={{ margin: '0.35rem 0 0' }}>{g.def}</p>
             </article>
           ))}
         </div>
-
-        <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={() => markModule('email')}>
-          Marcar módulo E-mail como estudado
-        </button>
       </div>
     </div>
   )

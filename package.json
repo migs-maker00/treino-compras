@@ -1,13 +1,14 @@
 {
   "name": "treino-compras",
   "private": true,
-  "version": "1.0.0",
-  "description": "Site de preparação para compras, fornecedores, Excel e conferência de mercadorias",
+  "version": "2.0.0",
+  "description": "Treino prático para chegar no 1º dia sabendo executar o básico de compras",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
+    "check": "npm run lint && npm run build",
     "preview": "vite preview"
   },
   "dependencies": {
