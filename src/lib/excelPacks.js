@@ -48,18 +48,26 @@ function paintPractice(cell) {
     bottom: { style: 'thin', color: { argb: 'FFD4A017' } },
     right: { style: 'thin', color: { argb: 'FFD4A017' } },
   }
+  // Importante: no Excel, locked=true só trava se a aba estiver protegida.
+  // Mesmo assim, destravamos as células de prática explicitamente.
+  cell.protection = { locked: false }
 }
 
-function downloadBlob(buffer, filename) {
-  const blob = new Blob([buffer], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+function unlockWorksheet(ws) {
+  ws.eachRow({ includeEmpty: true }, (row) => {
+    row.eachCell({ includeEmpty: true }, (cell) => {
+      cell.protection = { locked: false }
+    })
   })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
+  for (let r = 1; r <= 50; r += 1) {
+    for (let c = 1; c <= 16; c += 1) {
+      ws.getCell(r, c).protection = { locked: false }
+    }
+  }
+}
+
+export function publicPackUrl(filename) {
+  return `/exercicios/${filename}`
 }
 
 function numClose(a, b, tol = 0.02) {
@@ -197,8 +205,10 @@ export const excelPacks = [
         const total2 = p[7] + p[8]
         gab.addRow([...p, total1, total2, Math.min(total1, total2)])
       })
-      gab.state = 'hidden'
+      // Visível, mas no fim — só consulte se travar
+      gab.name = 'Gabarito_so_se_travar'
 
+      for (const sheet of wb.worksheets) unlockWorksheet(sheet)
       return wb
     },
     expected() {
@@ -308,14 +318,14 @@ export const excelPacks = [
       pedidos.getColumn(2).width = 22
       pedidos.getColumn(3).width = 12
 
-      const gab = wb.addWorksheet('Gabarito')
-      gab.state = 'hidden'
+      const gab = wb.addWorksheet('Gabarito_so_se_travar')
       gab.addRow(['Codigo', 'Preco'])
       order.forEach(([code]) => {
         const row = LOOKUP.find((l) => l[0] === code)
         gab.addRow([code, row[3]])
       })
 
+      for (const sheet of wb.worksheets) unlockWorksheet(sheet)
       return wb
     },
     async verify(wb) {
@@ -395,14 +405,14 @@ export const excelPacks = [
         ws.getColumn(i + 1).width = w
       })
 
-      const gab = wb.addWorksheet('Gabarito')
-      gab.state = 'hidden'
+      const gab = wb.addWorksheet('Gabarito_so_se_travar')
       gab.addRow(['Produto', 'TotalA', 'TotalB', 'Vencedor'])
       rows.forEach((r) => {
         const ta = r[1] + r[2]
         const tb = r[3] + r[4]
         gab.addRow([r[0], ta, tb, ta < tb ? 'A' : 'B'])
       })
+      for (const sheet of wb.worksheets) unlockWorksheet(sheet)
       return wb
     },
     async verify(wb) {
@@ -440,13 +450,6 @@ export const excelPacks = [
     },
   },
 ]
-
-export async function downloadPack(pack) {
-  const ExcelJS = await loadExcelJS()
-  const wb = await pack.build(ExcelJS)
-  const buffer = await wb.xlsx.writeBuffer()
-  downloadBlob(buffer, pack.filename)
-}
 
 export async function verifyUploadedFile(pack, file) {
   const ExcelJS = await loadExcelJS()

@@ -9,6 +9,7 @@
     "build": "vite build",
     "lint": "oxlint",
     "check": "npm run lint && npm run build",
+    "excel:packs": "node scripts/generate-excel-packs.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
