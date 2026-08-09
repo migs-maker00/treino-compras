@@ -23,16 +23,16 @@ export default function ExcelModule({ setSkillExact, markExercise, progress }) {
       <section className="hero">
         <h1>🖥️ Excel — pratique fórmulas de verdade</h1>
         <p>
-          Treine no navegador ou com arquivo .xlsx. Células amarelas = onde você digita as fórmulas.
+          Abra a planilha direto no site. Células amarelas = onde você digita as fórmulas.
         </p>
       </section>
 
       <div className="light-panel">
         <div className="tabs">
           {[
-            ['excel', '1. Praticar no Excel'],
+            ['excel', '1. Planilha no site'],
             ['basico', '2. Conceitos'],
-            ['formulas', '3. Treino rápido no site'],
+            ['formulas', '3. Treino rápido'],
             ['cotacao', '4. Decisão de cotação'],
           ].map(([id, label]) => (
             <button
@@ -47,7 +47,7 @@ export default function ExcelModule({ setSkillExact, markExercise, progress }) {
 
         {tab === 'excel' && (
           <>
-            <h2 style={{ marginTop: 0 }}>Laboratório Excel</h2>
+            <h2 style={{ marginTop: 0 }}>Planilha no site</h2>
             <ExcelPractice
               progress={progress}
               markExercise={markExercise}
