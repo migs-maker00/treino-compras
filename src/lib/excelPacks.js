@@ -124,11 +124,10 @@ export const excelPacks = [
       'Abra no Excel na Web e preencha as células amarelas com fórmulas (Total e Melhor preço).',
     steps: [
       'Abra o exercício no Excel na Web pelo link do site.',
-      'Salve uma cópia no OneDrive para editar (grátis).',
-      'Na aba Cotacao, preencha as colunas amarelas J, K e L.',
-      'J = Preço1 + Frete1 (ex.: =E2+F2)',
-      'K = Preço2 + Frete2 (ex.: =H2+I2)',
-      'L = o menor entre J e K (ex.: =MÍNIMO(J2:K2) ou =MIN(J2:K2))',
+      'Salve uma cópia no OneDrive e edite as células amarelas.',
+      'Na aba Cotacao: J =E2+F2 | K =H2+I2 | L =MIN(J2:K2) (arraste até a linha 11).',
+      'Arquivo → Baixar → Microsoft Excel (.xlsx).',
+      'Envie o arquivo no site para correção automática.',
     ],
     filename: 'treino-compras-01-cotacao.xlsx',
     async build(ExcelJS) {
@@ -265,11 +264,10 @@ export const excelPacks = [
     level: 'Importante',
     summary: 'No Excel na Web, use PROCV (ou VLOOKUP) para buscar o preço pelo código.',
     steps: [
-      'Abra o exercício no Excel na Web.',
-      'Salve uma cópia no OneDrive para editar.',
-      'Aba Base: catálogo com códigos e preços.',
-      'Aba Pedidos: preencha a coluna Preço (amarela).',
-      'Exemplo em C2: =PROCV(A2;Base!A:D;4;FALSO) ou =VLOOKUP(A2,Base!A:D,4,FALSE)',
+      'Abra o exercício no Excel na Web e salve uma cópia.',
+      'Aba Pedidos: em C2 use =PROCV(A2;Base!A:D;4;FALSO) e arraste.',
+      'Arquivo → Baixar → Microsoft Excel (.xlsx).',
+      'Envie o arquivo no site para correção.',
     ],
     filename: 'treino-compras-02-procv.xlsx',
     async build(ExcelJS) {
@@ -363,10 +361,10 @@ export const excelPacks = [
     level: 'Avançado',
     summary: 'No Excel na Web, calcule totais e escolha o melhor fornecedor com SE.',
     steps: [
-      'Abra o exercício no Excel na Web e salve uma cópia.',
-      'Aba Decisao: preencha F (TotalA), G (TotalB) e H (Vencedor).',
-      'H2 exemplo PT: =SE(F2<G2;"A";"B")',
-      'H2 exemplo EN: =IF(F2<G2,"A","B")',
+      'Abra no Excel na Web, salve uma cópia e preencha F, G e H.',
+      'H2: =SE(F2<G2;"A";"B")',
+      'Arquivo → Baixar → Microsoft Excel (.xlsx).',
+      'Envie o arquivo no site para correção.',
     ],
     filename: 'treino-compras-03-decisao.xlsx',
     async build(ExcelJS) {

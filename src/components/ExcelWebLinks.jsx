@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { excelPacks, publicPackUrl } from '../lib/excelPacks'
+import { useMemo, useRef, useState } from 'react'
+import { excelPacks, publicPackUrl, verifyUploadedFile } from '../lib/excelPacks'
 
 const EXCEL_WEB_LAUNCH = 'https://www.microsoft365.com/launch/excel'
 const EXCEL_WEB_HOME = 'https://excel.cloud.microsoft/'
@@ -15,49 +15,61 @@ function excelOnlineViewUrl(filename) {
   return `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(absoluteFileUrl(filename))}`
 }
 
-const HOW_TO = [
-  'Clique em Abrir no Excel na Web (abre o exercício no site da Microsoft).',
-  'Entre com sua conta Microsoft (é grátis).',
-  'Clique em Editar no navegador / Salvar uma cópia no OneDrive.',
-  'Preencha as células amarelas com as fórmulas.',
-  'Volte aqui e marque o exercício como feito.',
-]
-
 export default function ExcelWebLinks({ progress, markExercise, setSkillExact }) {
   const [activeId, setActiveId] = useState(excelPacks[0].id)
+  const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState(null)
+  const inputRef = useRef(null)
   const pack = excelPacks.find((p) => p.id === activeId)
 
   const links = useMemo(
     () => ({
       view: excelOnlineViewUrl(pack.filename),
       file: absoluteFileUrl(pack.filename),
-      launch: EXCEL_WEB_LAUNCH,
-      home: EXCEL_WEB_HOME,
     }),
     [pack.filename],
   )
 
   const doneCount = excelPacks.filter((p) => progress.exerciseDone[`excelweb-${p.id}`]).length
+  const isDone = !!progress.exerciseDone[`excelweb-${pack.id}`]
 
-  function markDone() {
-    markExercise(`excelweb-${pack.id}`, true, 'excel', 0)
-    const next = doneCount + (progress.exerciseDone[`excelweb-${pack.id}`] ? 0 : 1)
-    setSkillExact('excel', Math.max(progress.skillScores.excel || 0, 55 + next * 15))
+  async function handleUpload(file) {
+    if (!file) return
+    setBusy(true)
+    setResult(null)
+    try {
+      const report = await verifyUploadedFile(pack, file)
+      setResult(report)
+      if (report.passed) {
+        markExercise(`excelweb-${pack.id}`, true, 'excel', 0)
+        const next = doneCount + (isDone ? 0 : 1)
+        setSkillExact('excel', Math.max(progress.skillScores.excel || 0, 55 + next * 15))
+      }
+    } catch (err) {
+      setResult({
+        passed: false,
+        score: 0,
+        message: `Não consegui ler o arquivo. No Excel na Web: Arquivo → Baixar → Microsoft Excel (.xlsx) e envie esse arquivo. (${err.message})`,
+      })
+    } finally {
+      setBusy(false)
+      if (inputRef.current) inputRef.current.value = ''
+    }
   }
 
   return (
     <div>
       <p className="muted">
-        Os exercícios abrem no <strong>Excel na Web</strong> (site da Microsoft). Não usa o Excel
-        instalado no PC.
+        Abra no <strong>Excel na Web</strong>, preencha as células amarelas e depois envie o arquivo
+        para correção. Só conclui se estiver certo.
       </p>
 
       <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-        <a className="btn btn-primary" href={EXCEL_WEB_LAUNCH} target="_blank" rel="noreferrer">
+        <a className="btn btn-soft" href={EXCEL_WEB_LAUNCH} target="_blank" rel="noreferrer">
           Abrir Excel na Web
         </a>
         <a className="btn btn-soft" href={EXCEL_WEB_HOME} target="_blank" rel="noreferrer">
-          Página inicial do Excel Online
+          Página do Excel Online
         </a>
       </div>
 
@@ -67,7 +79,10 @@ export default function ExcelWebLinks({ progress, markExercise, setSkillExact })
             key={p.id}
             type="button"
             className={`tab ${activeId === p.id ? 'active' : ''}`}
-            onClick={() => setActiveId(p.id)}
+            onClick={() => {
+              setActiveId(p.id)
+              setResult(null)
+            }}
           >
             {progress.exerciseDone[`excelweb-${p.id}`] ? '✓ ' : ''}
             {p.title.split('—')[0].trim()}
@@ -79,6 +94,7 @@ export default function ExcelWebLinks({ progress, markExercise, setSkillExact })
         <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap', marginBottom: '0.45rem' }}>
           <span className="chip">{pack.level}</span>
           <span className="chip">{pack.time}</span>
+          {isDone && <span className="chip-ok chip">Corrigido e aprovado</span>}
         </div>
         <h3 style={{ margin: '0 0 0.4rem' }}>{pack.title}</h3>
         <p className="muted" style={{ marginTop: 0 }}>{pack.summary}</p>
@@ -89,44 +105,86 @@ export default function ExcelWebLinks({ progress, markExercise, setSkillExact })
         </ol>
       </div>
 
-      <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-        <a className="btn btn-primary" href={links.view} target="_blank" rel="noreferrer">
-          Abrir este exercício no Excel na Web
-        </a>
-        <a className="btn btn-dark" href={links.file} target="_blank" rel="noreferrer">
-          Link direto do arquivo
-        </a>
-        <button
-          type="button"
-          className="btn btn-soft"
-          onClick={markDone}
-          disabled={!!progress.exerciseDone[`excelweb-${pack.id}`]}
-        >
-          {progress.exerciseDone[`excelweb-${pack.id}`]
-            ? 'Exercício marcado'
-            : 'Marquei como concluído'}
-        </button>
-      </div>
-
-      <div className="mini-card">
-        <strong>Como editar de graça</strong>
+      <div className="mini-card" style={{ marginBottom: '1rem' }}>
+        <strong>Passo a passo com correção</strong>
         <ol style={{ marginBottom: 0 }}>
-          {HOW_TO.map((step) => (
-            <li key={step}>{step}</li>
-          ))}
+          <li>Abra o exercício no Excel na Web.</li>
+          <li>Salve uma cópia no OneDrive e edite as células amarelas.</li>
+          <li>No Excel na Web: <strong>Arquivo → Baixar → Microsoft Excel (.xlsx)</strong>.</li>
+          <li>Envie esse arquivo aqui para o site corrigir.</li>
         </ol>
       </div>
 
+      <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '0.8rem' }}>
+        <a className="btn btn-primary" href={links.view} target="_blank" rel="noreferrer">
+          1. Abrir exercício no Excel na Web
+        </a>
+        <button
+          type="button"
+          className="btn btn-dark"
+          disabled={busy}
+          onClick={() => inputRef.current?.click()}
+        >
+          {busy ? 'Corrigindo…' : '2. Enviar para correção (.xlsx)'}
+        </button>
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          hidden
+          onChange={(e) => handleUpload(e.target.files?.[0])}
+        />
+      </div>
+
+      <p className="muted" style={{ fontSize: '0.85rem' }}>
+        Arquivo do exercício:{' '}
+        <a href={links.file} target="_blank" rel="noreferrer">
+          {pack.filename}
+        </a>
+      </p>
+
+      {result && (
+        <div
+          className={`feedback ${result.passed ? 'ok' : 'bad'}`}
+          style={{ marginTop: '0.9rem' }}
+        >
+          {result.score != null && (
+            <div>
+              <strong>Score:</strong> {result.score}%
+            </div>
+          )}
+          <div>{result.message}</div>
+          {result.details?.length > 0 && (
+            <ul>
+              {result.details.map((d) => (
+                <li key={d}>{d}</li>
+              ))}
+            </ul>
+          )}
+          {result.passed ? (
+            <div style={{ marginTop: '0.5rem' }}>Exercício concluído por correção automática.</div>
+          ) : (
+            <div style={{ marginTop: '0.5rem' }}>
+              Ainda não concluiu. Corrija no Excel na Web e envie de novo.
+            </div>
+          )}
+        </div>
+      )}
+
       <p style={{ marginTop: '0.9rem' }}>
-        Exercícios no Excel Web: <strong>{doneCount}/{excelPacks.length}</strong>
+        Aprovados na correção: <strong>{doneCount}/{excelPacks.length}</strong>
       </p>
 
       <div className="cards" style={{ marginTop: '1rem' }}>
         {excelPacks.map((p) => {
           const view = excelOnlineViewUrl(p.filename)
+          const done = !!progress.exerciseDone[`excelweb-${p.id}`]
           return (
             <article key={p.id} className="mini-card">
-              <strong>{p.title}</strong>
+              <strong>
+                {done ? '✓ ' : ''}
+                {p.title}
+              </strong>
               <p className="muted" style={{ margin: '0.35rem 0 0.7rem' }}>{p.summary}</p>
               <a className="btn btn-primary" href={view} target="_blank" rel="noreferrer">
                 Abrir no Excel Web
