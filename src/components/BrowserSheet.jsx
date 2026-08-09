@@ -1,10 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { browserSheets } from '../data/browserSheets'
 import { evaluateSheet, indexToCol, numClose } from '../lib/sheetEngine'
 
 function buildData(sheet) {
   const data = {}
-  // header row 1
   sheet.headers.forEach((h, c) => {
     data[`${indexToCol(c)}1`] = h
   })
@@ -13,7 +12,6 @@ function buildData(sheet) {
     row.forEach((val, c) => {
       data[`${indexToCol(c)}${r}`] = val
     })
-    // ensure editable cells exist
     sheet.editableCols.forEach((c) => {
       const addr = `${indexToCol(c)}${r}`
       if (data[addr] === undefined) data[addr] = ''
@@ -35,13 +33,84 @@ function buildData(sheet) {
   return data
 }
 
+function formatDisplay(value) {
+  if (value === '' || value == null) return ''
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Number.isInteger(value) ? String(value) : String(Math.round(value * 1000) / 1000)
+  }
+  return String(value)
+}
+
+function EditableCell({ addr, raw, displayValue, onChange }) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(raw)
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    if (!editing) setDraft(raw)
+  }, [raw, editing])
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus()
+      inputRef.current.select()
+    }
+  }, [editing])
+
+  if (editing) {
+    return (
+      <td className="sheet-edit sheet-editing">
+        <input
+          ref={inputRef}
+          value={draft}
+          placeholder="Digite a fórmula, ex: =E2+F2"
+          aria-label={`Editar ${addr}`}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={() => {
+            onChange(draft)
+            setEditing(false)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              onChange(draft)
+              setEditing(false)
+            }
+            if (e.key === 'Escape') {
+              e.preventDefault()
+              setDraft(raw)
+              setEditing(false)
+            }
+          }}
+        />
+      </td>
+    )
+  }
+
+  const empty = raw === '' || raw == null
+  return (
+    <td className="sheet-edit">
+      <button
+        type="button"
+        className={`sheet-cell-btn ${empty ? 'is-empty' : ''}`}
+        onClick={() => {
+          setDraft(raw ?? '')
+          setEditing(true)
+        }}
+        aria-label={`Célula ${addr}${empty ? ' vazia' : ''}`}
+      >
+        {empty ? <span className="sheet-placeholder">clique e digite =</span> : formatDisplay(displayValue)}
+      </button>
+    </td>
+  )
+}
+
 export default function BrowserSheet({ progress, markExercise, setSkillExact }) {
   const [sheetId, setSheetId] = useState(browserSheets[0].id)
   const sheet = browserSheets.find((s) => s.id === sheetId)
   const [data, setData] = useState(() => buildData(browserSheets[0]))
   const [showHint, setShowHint] = useState(false)
   const [checked, setChecked] = useState(false)
-  const [editing, setEditing] = useState(null) // address showing formula while focused
 
   const display = useMemo(() => evaluateSheet(data), [data])
 
@@ -51,11 +120,9 @@ export default function BrowserSheet({ progress, markExercise, setSkillExact }) 
     setData(buildData(next))
     setChecked(false)
     setShowHint(false)
-    setEditing(null)
   }
 
   function isEditable(r, c) {
-    // r is 1-based excel row
     if (r < 2 || r > sheet.rows.length + 1) return false
     return sheet.editableCols.includes(c)
   }
@@ -80,7 +147,7 @@ export default function BrowserSheet({ progress, markExercise, setSkillExact }) 
             : numClose(got, exp)
         if (!good) {
           rowOk = false
-          details.push(`${addr}: esperado ${exp}`)
+          details.push(`${addr}: esperado ${exp}, veio ${got === '' ? '(vazio)' : got}`)
         }
       })
       if (rowOk) ok += 1
@@ -89,7 +156,7 @@ export default function BrowserSheet({ progress, markExercise, setSkillExact }) 
       ok,
       total: sheet.rows.length,
       passed: ok === sheet.rows.length,
-      details: details.slice(0, 6),
+      details: details.slice(0, 8),
       score: Math.round((ok / sheet.rows.length) * 100),
     }
   }, [display, sheet])
@@ -111,6 +178,9 @@ export default function BrowserSheet({ progress, markExercise, setSkillExact }) 
       </div>
 
       <p className="muted">{sheet.help}</p>
+      <p className="muted" style={{ fontSize: '0.85rem' }}>
+        Clique na célula amarela → digite a fórmula → Enter (ou clique fora) para calcular.
+      </p>
 
       <div className="table-wrap sheet-browser">
         <table className="data sheet-table">
@@ -118,7 +188,7 @@ export default function BrowserSheet({ progress, markExercise, setSkillExact }) 
             <tr>
               <th className="sheet-rowhead" />
               {sheet.headers.map((h, c) => (
-                <th key={h}>{indexToCol(c)}</th>
+                <th key={`col-${indexToCol(c)}`}>{indexToCol(c)}</th>
               ))}
             </tr>
             <tr>
@@ -138,27 +208,24 @@ export default function BrowserSheet({ progress, markExercise, setSkillExact }) 
                     const addr = `${indexToCol(c)}${r}`
                     const editable = isEditable(r, c)
                     const raw = data[addr] ?? ''
-                    const shown =
-                      editing === addr ? raw : display[addr] === '' || display[addr] == null
-                        ? ''
-                        : String(display[addr])
+                    if (!editable) {
+                      return (
+                        <td key={addr} className="sheet-locked">
+                          <span>{formatDisplay(display[addr] ?? raw)}</span>
+                        </td>
+                      )
+                    }
                     return (
-                      <td key={addr} className={editable ? 'sheet-edit' : 'sheet-locked'}>
-                        {editable ? (
-                          <input
-                            value={editing === addr ? raw : shown}
-                            placeholder="=…"
-                            onFocus={() => setEditing(addr)}
-                            onBlur={() => setEditing(null)}
-                            onChange={(e) => {
-                              setChecked(false)
-                              setData((d) => ({ ...d, [addr]: e.target.value }))
-                            }}
-                          />
-                        ) : (
-                          <span>{String(display[addr] ?? raw)}</span>
-                        )}
-                      </td>
+                      <EditableCell
+                        key={addr}
+                        addr={addr}
+                        raw={String(raw)}
+                        displayValue={display[addr]}
+                        onChange={(value) => {
+                          setChecked(false)
+                          setData((d) => ({ ...d, [addr]: value }))
+                        }}
+                      />
                     )
                   })}
                 </tr>
@@ -182,9 +249,9 @@ export default function BrowserSheet({ progress, markExercise, setSkillExact }) 
               </thead>
               <tbody>
                 {sheet.lookupRows.map((row) => (
-                  <tr key={row[0]}>
-                    {row.map((cell) => (
-                      <td key={`${row[0]}-${cell}`}>{cell}</td>
+                  <tr key={row.join('-')}>
+                    {row.map((cell, idx) => (
+                      <td key={`${row[0]}-${idx}`}>{cell}</td>
                     ))}
                   </tr>
                 ))}

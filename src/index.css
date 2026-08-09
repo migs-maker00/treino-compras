@@ -489,28 +489,66 @@ table.data tr.best-row {
 .sheet-table td.sheet-edit {
   background: #fff8d6;
   padding: 0;
+  min-width: 110px;
 }
 
-.sheet-table td.sheet-edit input {
+.sheet-table td.sheet-editing {
+  background: #fff;
+  box-shadow: inset 0 0 0 2px var(--teal);
+}
+
+.sheet-cell-btn {
+  display: block;
   width: 100%;
-  min-width: 88px;
+  min-height: 2.4rem;
+  margin: 0;
+  padding: 0.55rem 0.5rem;
   border: 0;
-  background: transparent;
-  padding: 0.55rem 0.45rem;
   border-radius: 0;
+  background: transparent;
+  color: #0f1c2a;
+  font: inherit;
   font-family: ui-monospace, Consolas, monospace;
   font-size: 0.85rem;
+  text-align: left;
+  cursor: text;
 }
 
-.sheet-table td.sheet-edit input:focus {
-  outline: 2px solid var(--teal);
-  outline-offset: -2px;
+.sheet-cell-btn.is-empty {
+  color: #8a97a5;
+  font-style: italic;
+  font-family: var(--font-body);
+}
+
+.sheet-placeholder {
+  opacity: 0.85;
+}
+
+.sheet-table td.sheet-edit input,
+.sheet-table td.sheet-editing input {
+  width: 100%;
+  min-width: 110px;
+  min-height: 2.4rem;
+  border: 0;
+  border-radius: 0;
   background: #fff;
+  color: #0f1c2a;
+  padding: 0.55rem 0.5rem;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.9rem;
+  caret-color: #0f1c2a;
+}
+
+.sheet-table td.sheet-edit input:focus,
+.sheet-table td.sheet-editing input:focus {
+  outline: none;
+  background: #fff;
+  color: #0f1c2a;
 }
 
 .sheet-table td.sheet-locked {
   background: #fafafa;
-  color: var(--ink);
+  color: #0f1c2a;
 }
 
 .tabs {

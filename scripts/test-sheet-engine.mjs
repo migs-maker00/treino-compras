@@ -1,41 +1,142 @@
 import { evaluateSheet } from '../src/lib/sheetEngine.js'
+import { browserSheets } from '../src/data/browserSheets.js'
+import { indexToCol } from '../src/lib/sheetEngine.js'
 
-const data = {
-  E2: 0.95,
-  F2: 25,
-  H2: 1.1,
-  I2: 0,
-  J2: '=E2+F2',
-  K2: '=H2+I2',
-  L2: '=MIN(J2:K2)',
-  A2: '003',
-  A14: '001',
-  B14: 'x',
-  C14: 'y',
-  D14: 0.95,
-  A15: '003',
-  B15: 'luva',
-  C15: 'z',
-  D15: 7.2,
-  C2: '=PROCV(A2;A14:D15;4;0)',
-  B3: 400,
-  C3: 30,
-  D3: 350,
-  E3: 80,
-  F3: '=B3+C3',
-  G3: '=D3+E3',
-  H3: '=SE(F3<G3;"A";"B")',
+function assert(cond, msg) {
+  if (!cond) {
+    console.error('FAIL:', msg)
+    process.exit(1)
+  }
 }
 
-const d = evaluateSheet(data)
-console.log({ J2: d.J2, K2: d.K2, L2: d.L2, C2: d.C2, F3: d.F3, G3: d.G3, H3: d.H3 })
-const ok =
-  d.J2 === 25.95 &&
-  d.K2 === 1.1 &&
-  d.L2 === 1.1 &&
-  Number(d.C2) === 7.2 &&
-  d.F3 === 430 &&
-  d.G3 === 430 &&
-  d.H3 === 'B'
-console.log(ok ? 'PASS' : 'FAIL')
-if (!ok) process.exit(1)
+// 1) Fórmulas básicas
+{
+  const data = {
+    E2: 0.95,
+    F2: 25,
+    H2: 1.1,
+    I2: 0,
+    J2: '=E2+F2',
+    K2: '=H2+I2',
+    L2: '=MIN(J2:K2)',
+    L3: '=MÍNIMO(J2:K2)',
+    A2: '003',
+    A14: '001',
+    B14: 'x',
+    C14: 'y',
+    D14: 0.95,
+    A15: '003',
+    B15: 'luva',
+    C15: 'z',
+    D15: 7.2,
+    C2: '=PROCV(A2;A14:D15;4;0)',
+    C3: '=VLOOKUP(A2;A14:D15;4;FALSE)',
+    B4: 400,
+    C4: 30,
+    D4: 350,
+    E4: 80,
+    F4: '=B4+C4',
+    G4: '=D4+E4',
+    H4: '=SE(F4<G4;"A";"B")',
+    H5: '=IF(F4<=G4;"X";"Y")',
+  }
+  const d = evaluateSheet(data)
+  assert(d.J2 === 25.95, `J2 soma ${d.J2}`)
+  assert(d.K2 === 1.1, `K2 soma ${d.K2}`)
+  assert(d.L2 === 1.1, `L2 MIN ${d.L2}`)
+  assert(d.L3 === 1.1, `L3 MÍNIMO ${d.L3}`)
+  assert(Number(d.C2) === 7.2, `C2 PROCV ${d.C2}`)
+  assert(Number(d.C3) === 7.2, `C3 VLOOKUP ${d.C3}`)
+  assert(d.F4 === 430 && d.G4 === 430, `totais ${d.F4}/${d.G4}`)
+  assert(d.H4 === 'B', `SE empate escolhe B, veio ${d.H4}`)
+  assert(d.H5 === 'X', `IF <= ${d.H5}`)
+  console.log('OK motor de fórmulas')
+}
+
+// 2) Exercício cotação completo
+{
+  const sheet = browserSheets.find((s) => s.id === 'cotacao')
+  const data = {}
+  sheet.headers.forEach((h, c) => {
+    data[`${indexToCol(c)}1`] = h
+  })
+  sheet.rows.forEach((row, i) => {
+    const r = i + 2
+    row.forEach((val, c) => {
+      data[`${indexToCol(c)}${r}`] = val
+    })
+    data[`J${r}`] = `=E${r}+F${r}`
+    data[`K${r}`] = `=H${r}+I${r}`
+    data[`L${r}`] = `=MIN(J${r}:K${r})`
+  })
+  const d = evaluateSheet(data)
+  sheet.rows.forEach((row, i) => {
+    const r = i + 2
+    const [t1, t2, mel] = sheet.expected(row)
+    assert(Math.abs(d[`J${r}`] - t1) < 0.02, `cotacao J${r}`)
+    assert(Math.abs(d[`K${r}`] - t2) < 0.02, `cotacao K${r}`)
+    assert(Math.abs(d[`L${r}`] - mel) < 0.02, `cotacao L${r}`)
+  })
+  console.log('OK exercício cotação')
+}
+
+// 3) Exercício PROCV completo
+{
+  const sheet = browserSheets.find((s) => s.id === 'procv')
+  const data = {}
+  sheet.headers.forEach((h, c) => {
+    data[`${indexToCol(c)}1`] = h
+  })
+  sheet.rows.forEach((row, i) => {
+    const r = i + 2
+    row.forEach((val, c) => {
+      data[`${indexToCol(c)}${r}`] = val
+    })
+    data[`C${r}`] = `=PROCV(A${r};A14:D21;4;0)`
+  })
+  const start = sheet.lookupStartRow
+  sheet.lookupHeaders.forEach((h, c) => {
+    data[`${indexToCol(c)}${start - 1}`] = h
+  })
+  sheet.lookupRows.forEach((row, i) => {
+    row.forEach((val, c) => {
+      data[`${indexToCol(c)}${start + i}`] = val
+    })
+  })
+  const d = evaluateSheet(data)
+  sheet.rows.forEach((row, i) => {
+    const r = i + 2
+    const [exp] = sheet.expected(row, sheet)
+    assert(Number(d[`C${r}`]) === exp, `procv C${r} esperado ${exp} veio ${d[`C${r}`]}`)
+  })
+  console.log('OK exercício PROCV')
+}
+
+// 4) Exercício decisão completo
+{
+  const sheet = browserSheets.find((s) => s.id === 'decisao')
+  const data = {}
+  sheet.headers.forEach((h, c) => {
+    data[`${indexToCol(c)}1`] = h
+  })
+  sheet.rows.forEach((row, i) => {
+    const r = i + 2
+    row.forEach((val, c) => {
+      data[`${indexToCol(c)}${r}`] = val
+    })
+    data[`F${r}`] = `=B${r}+C${r}`
+    data[`G${r}`] = `=D${r}+E${r}`
+    data[`H${r}`] = `=SE(F${r}<G${r};"A";"B")`
+  })
+  const d = evaluateSheet(data)
+  sheet.rows.forEach((row, i) => {
+    const r = i + 2
+    const [ta, tb, win] = sheet.expected(row)
+    assert(Math.abs(d[`F${r}`] - ta) < 0.02, `dec F${r}`)
+    assert(Math.abs(d[`G${r}`] - tb) < 0.02, `dec G${r}`)
+    assert(String(d[`H${r}`]) === win, `dec H${r} esperado ${win} veio ${d[`H${r}`]}`)
+  })
+  console.log('OK exercício decisão')
+}
+
+console.log('PASS all sheet tests')
