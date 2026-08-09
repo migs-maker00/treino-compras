@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { excelBasics, excelFormulas } from '../../data/content'
 import { checkFormula, formulaDrills } from '../../data/practice'
 import CotacaoSimulator from '../CotacaoSimulator'
+import ExcelPractice from '../ExcelPractice'
 
 export default function ExcelModule({ setSkillExact, markExercise, progress }) {
-  const [tab, setTab] = useState('basico')
+  const [tab, setTab] = useState('excel')
   const [answers, setAnswers] = useState({})
   const [checked, setChecked] = useState(false)
 
@@ -20,20 +21,20 @@ export default function ExcelModule({ setSkillExact, markExercise, progress }) {
   return (
     <div className="panel">
       <section className="hero">
-        <h1>🖥️ Excel — execute, não só leia</h1>
+        <h1>🖥️ Excel — pratique no Excel de verdade</h1>
         <p>
-          Objetivo: chegar sabendo organizar planilha, escrever fórmulas básicas e decidir cotação
-          com critério — não só clicar “concluído”.
+          Baixe a planilha, abra no Excel (ou Sheets), preencha as células amarelas com fórmulas e
+          envie de volta para o site corrigir automaticamente.
         </p>
       </section>
 
       <div className="light-panel">
         <div className="tabs">
           {[
-            ['basico', '1. Conceitos'],
-            ['formulas', '2. Digite a fórmula'],
-            ['cotacao', '3. Decida cotação'],
-            ['sheets', '4. No Excel/Sheets'],
+            ['excel', '1. Praticar no Excel'],
+            ['basico', '2. Conceitos'],
+            ['formulas', '3. Treino rápido no site'],
+            ['cotacao', '4. Decisão de cotação'],
           ].map(([id, label]) => (
             <button
               key={id}
@@ -44,6 +45,17 @@ export default function ExcelModule({ setSkillExact, markExercise, progress }) {
             </button>
           ))}
         </div>
+
+        {tab === 'excel' && (
+          <>
+            <h2 style={{ marginTop: 0 }}>Laboratório Excel</h2>
+            <ExcelPractice
+              progress={progress}
+              markExercise={markExercise}
+              setSkillExact={setSkillExact}
+            />
+          </>
+        )}
 
         {tab === 'basico' && (
           <>
@@ -59,14 +71,18 @@ export default function ExcelModule({ setSkillExact, markExercise, progress }) {
                 </li>
               ))}
             </ul>
-            <p className="muted">Depois vá para a aba <strong>Digite a fórmula</strong> e pratique.</p>
+            <p className="muted">
+              O melhor treino está na aba <strong>Praticar no Excel</strong>.
+            </p>
           </>
         )}
 
         {tab === 'formulas' && (
           <>
-            <h2 style={{ marginTop: 0 }}>Prova rápida de fórmulas</h2>
-            <p className="muted">Digite a fórmula como no Excel (aceita PT ou EN). Precisa acertar todas.</p>
+            <h2 style={{ marginTop: 0 }}>Aquecimento no site</h2>
+            <p className="muted">
+              Antes de abrir o Excel, aqueça digitando as fórmulas aqui. Depois faça os arquivos .xlsx.
+            </p>
             <div className="formula-grid" style={{ marginBottom: '1rem' }}>
               {excelFormulas.map((f) => (
                 <article key={f.name} className="mini-card">
@@ -118,8 +134,8 @@ export default function ExcelModule({ setSkillExact, markExercise, progress }) {
             {checked && (
               <div className={`feedback ${drillPassed ? 'ok' : 'bad'}`} style={{ marginTop: '0.8rem' }}>
                 {drillPassed
-                  ? `Aprovado nas fórmulas (${drillScore}%). Agora faça a cotação.`
-                  : `${drillScore}% — corrija as fórmulas marcadas e tente de novo.`}
+                  ? `Aquecimento ok (${drillScore}%). Agora vá em Praticar no Excel.`
+                  : `${drillScore}% — corrija e tente de novo.`}
               </div>
             )}
           </>
@@ -127,46 +143,14 @@ export default function ExcelModule({ setSkillExact, markExercise, progress }) {
 
         {tab === 'cotacao' && (
           <>
-            <h2 style={{ marginTop: 0 }}>Missão: escolher fornecedor</h2>
+            <h2 style={{ marginTop: 0 }}>Missão: escolher fornecedor (no site)</h2>
             <CotacaoSimulator
               onPass={() => {
                 markExercise('excel-cotacao', true, 'excel', 0)
-                const base = progress.exerciseDone['excel-formulas'] ? 85 : 70
+                const base = progress.exerciseDone['xlsx-cotacao'] ? 90 : 70
                 setSkillExact('excel', Math.max(progress.skillScores.excel || 0, base))
               }}
             />
-          </>
-        )}
-
-        {tab === 'sheets' && (
-          <>
-            <h2 style={{ marginTop: 0 }}>Prática no Excel ou Google Sheets</h2>
-            <p>Abra o Excel/Sheets e reproduza isto (10–15 min):</p>
-            <ol>
-              <li>Crie a planilha <strong>COTAÇÃO DE FORNECEDORES</strong>.</li>
-              <li>Colunas: Produto | Spec | Qtd | Fornecedor1 | Preço1 | Frete1 | Fornecedor2 | Preço2 | Frete2 | Total1 | Total2 | Melhor.</li>
-              <li>Cadastre 10 produtos reais da sua rotina (ou use os do site).</li>
-              <li>Em Total use <code>=Preço+Frete</code>.</li>
-              <li>Em Melhor use <code>=SE(Total1&lt;Total2;"F1";"F2")</code> (ou MÍNIMO).</li>
-              <li>Congele o cabeçalho e ative filtro.</li>
-            </ol>
-            <div className="feedback">
-              Dica: o site treina a decisão; o Excel/Sheets treina o músculo da planilha.
-              Faça os dois.
-            </div>
-            <button
-              className="btn btn-primary"
-              style={{ marginTop: '0.8rem' }}
-              onClick={() => {
-                markExercise('excel-sheets', true, 'excel', 0)
-                setSkillExact('excel', Math.max(progress.skillScores.excel || 0, 75))
-              }}
-            >
-              Marquei: já reproduzi no Excel/Sheets
-            </button>
-            <p className="muted" style={{ fontSize: '0.85rem' }}>
-              (Esse botão é uma auto-declaração honesta — use só se você realmente abriu a planilha.)
-            </p>
           </>
         )}
       </div>
