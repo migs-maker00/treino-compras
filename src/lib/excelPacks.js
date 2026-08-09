@@ -121,14 +121,14 @@ export const excelPacks = [
     time: '15–20 min',
     level: 'Essencial',
     summary:
-      'Baixe a planilha, abra no Excel e preencha as células amarelas com fórmulas (Total e Melhor preço).',
+      'Abra no Excel na Web e preencha as células amarelas com fórmulas (Total e Melhor preço).',
     steps: [
-      'Baixe o arquivo e abra no Excel (ou Google Sheets).',
-      'Na aba "Cotacao", preencha as colunas amarelas J, K e L.',
+      'Abra o exercício no Excel na Web pelo link do site.',
+      'Salve uma cópia no OneDrive para editar (grátis).',
+      'Na aba Cotacao, preencha as colunas amarelas J, K e L.',
       'J = Preço1 + Frete1 (ex.: =E2+F2)',
       'K = Preço2 + Frete2 (ex.: =H2+I2)',
       'L = o menor entre J e K (ex.: =MÍNIMO(J2:K2) ou =MIN(J2:K2))',
-      'Salve o arquivo (.xlsx) e envie aqui para correção automática.',
     ],
     filename: 'treino-compras-01-cotacao.xlsx',
     async build(ExcelJS) {
@@ -140,16 +140,14 @@ export const excelPacks = [
       ;[
         'TREINO COMPRAS — Exercício 1: Cotação',
         '',
-        'Objetivo: praticar fórmulas no Excel de verdade.',
+        'Objetivo: praticar fórmulas no Excel na Web.',
         '',
         '1) Vá para a aba Cotacao',
         '2) Nas células AMARELAS, digite fórmulas (não copie números na mão)',
         '3) Coluna J (Total1): =E2+F2  e arraste até a linha 11',
         '4) Coluna K (Total2): =H2+I2  e arraste até a linha 11',
         '5) Coluna L (Melhor): =MÍNIMO(J2:K2)  ou  =MIN(J2:K2)',
-        '6) Salve como .xlsx e envie no site para corrigir',
-        '',
-        'Dica Google Sheets: Arquivo > Fazer download > Microsoft Excel (.xlsx)',
+        '6) Se abriu só em visualização, use Editar no navegador / Salvar uma cópia',
       ].forEach((line, i) => {
         info.getCell(i + 1, 1).value = line
         if (i === 0) info.getCell(i + 1, 1).font = { bold: true, size: 14 }
@@ -265,13 +263,13 @@ export const excelPacks = [
     title: 'Exercício 2 — PROCV / busca de preço',
     time: '15 min',
     level: 'Importante',
-    summary: 'Use PROCV (ou VLOOKUP/PROCX) para buscar o preço pelo código do produto.',
+    summary: 'No Excel na Web, use PROCV (ou VLOOKUP) para buscar o preço pelo código.',
     steps: [
-      'Abra a planilha no Excel.',
-      'Aba "Base": catálogo com códigos e preços.',
-      'Aba "Pedidos": preencha a coluna Preço (amarela) buscando na Base.',
-      'Exemplo em C2: =PROCV(A2;Base!A:D;4;FALSO)  ou  =VLOOKUP(A2,Base!A:D,4,FALSE)',
-      'Salve e envie para correção.',
+      'Abra o exercício no Excel na Web.',
+      'Salve uma cópia no OneDrive para editar.',
+      'Aba Base: catálogo com códigos e preços.',
+      'Aba Pedidos: preencha a coluna Preço (amarela).',
+      'Exemplo em C2: =PROCV(A2;Base!A:D;4;FALSO) ou =VLOOKUP(A2,Base!A:D,4,FALSE)',
     ],
     filename: 'treino-compras-02-procv.xlsx',
     async build(ExcelJS) {
@@ -283,9 +281,9 @@ export const excelPacks = [
         '',
         'Na aba Pedidos, coluna C (Preco), use busca pelo código da coluna A.',
         'Excel PT-BR: =PROCV(A2;Base!A:D;4;FALSO)',
-        'Excel EN / Sheets: =VLOOKUP(A2,Base!A:D,4,FALSE)',
+        'Excel EN: =VLOOKUP(A2,Base!A:D,4,FALSE)',
         'Arraste até a última linha.',
-        'Salve .xlsx e envie no site.',
+        'Se estiver só visualizando: Editar no navegador / Salvar uma cópia.',
       ].forEach((line, i) => {
         info.getCell(i + 1, 1).value = line
       })
@@ -363,13 +361,12 @@ export const excelPacks = [
     title: 'Exercício 3 — Decisão de compra',
     time: '10–15 min',
     level: 'Avançado',
-    summary: 'Calcule custo total e indique o melhor fornecedor (A ou B) com fórmula SE.',
+    summary: 'No Excel na Web, calcule totais e escolha o melhor fornecedor com SE.',
     steps: [
-      'Abra no Excel a aba "Decisao".',
-      'Coluna F: Total A = PrecoA + FreteA',
-      'Coluna G: Total B = PrecoB + FreteB',
-      'Coluna H: =SE(F2<G2;"A";"B")  ou  =IF(F2<G2,"A","B")',
-      'Salve e envie.',
+      'Abra o exercício no Excel na Web e salve uma cópia.',
+      'Aba Decisao: preencha F (TotalA), G (TotalB) e H (Vencedor).',
+      'H2 exemplo PT: =SE(F2<G2;"A";"B")',
+      'H2 exemplo EN: =IF(F2<G2,"A","B")',
     ],
     filename: 'treino-compras-03-decisao.xlsx',
     async build(ExcelJS) {
@@ -381,6 +378,7 @@ export const excelPacks = [
         'Preencha F (TotalA), G (TotalB) e H (Vencedor: A ou B).',
         'H2 exemplo PT: =SE(F2<G2;"A";"B")',
         'H2 exemplo EN: =IF(F2<G2,"A","B")',
+        'Se estiver só visualizando: Editar no navegador / Salvar uma cópia.',
       ].forEach((line, i) => {
         info.getCell(i + 1, 1).value = line
       })
