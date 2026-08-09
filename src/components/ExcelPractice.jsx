@@ -39,25 +39,20 @@ export default function ExcelPractice({ progress, markExercise, setSkillExact })
 
   return (
     <div>
-      <div className="feedback" style={{ marginBottom: '1rem' }}>
-        <strong>Não precisa de chave do Excel.</strong> O Office bloqueia edição sem licença.
-        Use a planilha do site (recomendado) ou o Google Sheets (grátis).
-      </div>
-
       <div className="tabs">
         <button
           type="button"
           className={`tab ${mode === 'browser' ? 'active' : ''}`}
           onClick={() => setMode('browser')}
         >
-          Planilha no navegador (grátis)
+          Planilha no navegador
         </button>
         <button
           type="button"
           className={`tab ${mode === 'arquivo' ? 'active' : ''}`}
           onClick={() => setMode('arquivo')}
         >
-          Arquivo .xlsx (Excel/Sheets)
+          Arquivo .xlsx
         </button>
       </div>
 
@@ -71,25 +66,6 @@ export default function ExcelPractice({ progress, markExercise, setSkillExact })
 
       {mode === 'arquivo' && (
         <>
-          <div className="mini-card" style={{ marginBottom: '1rem' }}>
-            <strong>Opções sem pagar Excel</strong>
-            <ol style={{ marginBottom: 0 }}>
-              <li>
-                <a href="https://sheets.google.com" target="_blank" rel="noreferrer">
-                  Google Sheets
-                </a>
-                : envie o .xlsx para o Drive → abra com Sheets → edite → baixe de novo como Excel.
-              </li>
-              <li>
-                <a href="https://www.microsoft.com/pt-br/microsoft-365/free-office-online-for-the-web" target="_blank" rel="noreferrer">
-                  Excel na Web
-                </a>
-                {' '}(conta Microsoft) — versão online.
-              </li>
-              <li>LibreOffice Calc (programa grátis para PC).</li>
-            </ol>
-          </div>
-
           <div className="tabs">
             {excelPacks.map((p) => (
               <button

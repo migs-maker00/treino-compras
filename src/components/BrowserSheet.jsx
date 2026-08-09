@@ -96,11 +96,6 @@ export default function BrowserSheet({ progress, markExercise, setSkillExact }) 
 
   return (
     <div>
-      <div className="feedback ok" style={{ marginBottom: '1rem' }}>
-        <strong>Sem chave do Office:</strong> pratique aqui no navegador. É de graça e já treina as
-        mesmas fórmulas (soma, MÍNIMO/MIN, SE/IF, PROCV/VLOOKUP).
-      </div>
-
       <div className="tabs">
         {browserSheets.map((s) => (
           <button

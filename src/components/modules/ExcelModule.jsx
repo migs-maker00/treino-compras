@@ -23,8 +23,7 @@ export default function ExcelModule({ setSkillExact, markExercise, progress }) {
       <section className="hero">
         <h1>🖥️ Excel — pratique fórmulas de verdade</h1>
         <p>
-          Não precisa de chave do Office. Treine no navegador (recomendado) ou use Google Sheets.
-          Células amarelas = onde você digita as fórmulas.
+          Treine no navegador ou com arquivo .xlsx. Células amarelas = onde você digita as fórmulas.
         </p>
       </section>
 
