@@ -12,6 +12,15 @@ dist
 dist-ssr
 *.local
 
+# temp excel inspection artifacts
+pack1.xlsx
+pack1.zip
+pack1_unzip/
+pack_check.zip
+pack_check_unzip/
+test-unlock.xlsx
+scripts/inspect-pack.mjs
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
