@@ -102,11 +102,23 @@ function resolveRange(a, b, getValue, stack) {
 
 function evalCondition(raw, getValue, stack) {
   const e = stripAccents(normalizeFormula(raw))
+  // CONT.SE(...)>1 etc.: resolve função à esquerda antes de comparar
+  const fnCmp = /^(CONT\.SE|COUNTIF)\((.+)\)(<=|>=|<>|=|<|>)(.+)$/i.exec(e)
+  if (fnCmp) {
+    const left = evalContSe(fnCmp[2], getValue, stack)
+    const op = fnCmp[3]
+    const right = evalExpr(fnCmp[4], getValue, stack)
+    return compareValues(left, op, right)
+  }
   const m = /^(.+?)(<=|>=|<>|=|<|>)(.+)$/.exec(e)
   if (!m) return Boolean(evalExpr(e, getValue, stack))
   const left = evalExpr(m[1], getValue, stack)
   const op = m[2]
   const right = evalExpr(m[3], getValue, stack)
+  return compareValues(left, op, right)
+}
+
+function compareValues(left, op, right) {
   const ln = parseNumber(left)
   const rn = parseNumber(right)
   const L = ln != null ? ln : left
@@ -173,6 +185,27 @@ function evalProcv(argsRaw, getValue, stack) {
   return '#N/D'
 }
 
+function evalContSe(argsRaw, getValue, stack) {
+  const args = splitArgs(argsRaw)
+  if (args.length < 2) throw new Error('CONT.SE precisa de intervalo;critério')
+  const range = args[0]
+  if (!range.includes(':')) throw new Error('Intervalo do CONT.SE inválido')
+  const [a, b] = range.split(':')
+  const values = resolveRange(a, b, getValue, stack)
+  const criteria = evalExpr(args[1], getValue, stack)
+  const critNum = parseNumber(criteria)
+  let count = 0
+  for (const v of values) {
+    if (critNum != null) {
+      const n = parseNumber(v)
+      if (n != null && Math.abs(n - critNum) <= 0.02) count += 1
+    } else if (String(v).trim().toLowerCase() === String(criteria).trim().toLowerCase()) {
+      count += 1
+    }
+  }
+  return count
+}
+
 function evalSe(argsRaw, getValue, stack) {
   const args = splitArgs(argsRaw)
   if (args.length < 3) throw new Error('SE precisa de 3 argumentos')
@@ -197,6 +230,9 @@ function evalExpr(expr, getValue, stack) {
 
   m = /^(PROCV|VLOOKUP)\((.+)\)$/i.exec(e)
   if (m) return evalProcv(m[2], getValue, stack)
+
+  m = /^(CONT\.SE|COUNTIF)\((.+)\)$/i.exec(e)
+  if (m) return evalContSe(m[2], getValue, stack)
 
   m = /^(SE|IF)\((.+)\)$/i.exec(e)
   if (m) return evalSe(m[2], getValue, stack)

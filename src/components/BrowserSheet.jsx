@@ -275,7 +275,7 @@ export default function BrowserSheet({ progress, markExercise, setSkillExact }) 
               const count = browserSheets.filter(
                 (s) => progress.exerciseDone[`browser-${s.id}`] || s.id === sheet.id,
               ).length
-              setSkillExact('excel', Math.max(progress.skillScores.excel || 0, 50 + count * 15))
+              setSkillExact('excel', Math.min(100, Math.max(progress.skillScores.excel || 0, 40 + count * 12)))
             }
           }}
         >

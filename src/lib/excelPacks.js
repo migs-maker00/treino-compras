@@ -147,27 +147,45 @@ function money(n) {
   return Math.round(Number(n) * 1000) / 1000
 }
 
+function normText(s) {
+  return String(s ?? '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+}
+
+function isEmpateLabel(got) {
+  const t = normText(got)
+  return t === 'empate' || t === 'empatado' || t === 'tie' || t === 'draw'
+}
+
+function pickAB(ta, tb) {
+  if (numClose(ta, tb)) return 'Empate'
+  return ta < tb ? 'A' : 'B'
+}
+
+function pickSupplierOrEmpate(t1, t2, forn1, forn2) {
+  if (numClose(t1, t2)) return 'Empate'
+  return t1 < t2 ? forn1 : forn2
+}
+
+/** Aceita número (MIN), fornecedor vencedor, ou "Empate" quando os totais empatam. */
 function melhorMatches(got, melhorNum, forn1, forn2, total1, total2) {
+  if (numClose(total1, total2)) {
+    return isEmpateLabel(got) || numClose(got, melhorNum)
+  }
   if (numClose(got, melhorNum)) return true
-  const text = String(got ?? '')
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+  const text = normText(got)
   if (!text) return false
-  const a = String(forn1 || '')
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-  const b = String(forn2 || '')
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-  if (numClose(total1, total2)) return text === a || text === b
+  const a = normText(forn1)
+  const b = normText(forn2)
   if (total1 < total2) return text === a
   return text === b
+}
+
+function winMatches(got, expected) {
+  return normText(got) === normText(expected)
 }
 
 function gradeRows(total, ok, details, passMsg, failMsg) {
@@ -227,8 +245,8 @@ export const excelPacks = [
       'Abra no Excel na Web e preencha as células amarelas com fórmulas (Total e Melhor preço).',
     steps: [
       'Abra o exercício no Excel na Web e edite as células amarelas.',
-      'Na aba Cotacao: J =C2*E2+F2 | K =C2*H2+I2 | L =MIN(J2:K2) (arraste até a linha 11).',
-      'Melhor = o menor total (número), não o nome do fornecedor.',
+      'Na aba Cotacao: J =C2*E2+F2 | K =C2*H2+I2 (arraste até a linha 11).',
+      'L (Melhor): =SE(J2=K2;"Empate";SE(J2<K2;D2;G2)) — se empatar, escreve Empate.',
       'Fique na aba Cotacao → Arquivo → Exportar → Baixar como CSV.',
       'Envie o CSV no site para correção.',
     ],
@@ -248,7 +266,8 @@ export const excelPacks = [
         '2) Nas células AMARELAS, digite fórmulas (não copie números na mão)',
         '3) Coluna J (Total1): =C2*E2+F2  (Qtd × Preço1 + Frete1) e arraste até a linha 11',
         '4) Coluna K (Total2): =C2*H2+I2  (Qtd × Preço2 + Frete2) e arraste até a linha 11',
-        '5) Coluna L (Melhor): =MÍNIMO(J2:K2)  ou  =MIN(J2:K2)  — o menor TOTAL (número)',
+        '5) Coluna L (Melhor): =SE(J2=K2;"Empate";SE(J2<K2;D2;G2))',
+        '   → mostra o fornecedor mais barato OU a palavra Empate',
         '6) Se abriu só em visualização, use Editar no navegador / Salvar uma cópia',
       ].forEach((line, i) => {
         info.getCell(i + 1, 1).value = line
@@ -293,10 +312,10 @@ export const excelPacks = [
       tip.addRow(['Se travar, use estas fórmulas na linha 2 e arraste:'])
       tip.addRow(['J2', '=C2*E2+F2'])
       tip.addRow(['K2', '=C2*H2+I2'])
-      tip.addRow(['L2', '=MIN(J2:K2)   (no Excel PT-BR também pode =MÍNIMO(J2:K2))'])
+      tip.addRow(['L2', '=SE(J2=K2;"Empate";SE(J2<K2;D2;G2))'])
       tip.addRow([''])
       tip.addRow(['Total = quantidade × preço unitário + frete.'])
-      tip.addRow(['Melhor = menor total (número), não o nome do fornecedor.'])
+      tip.addRow(['Se Total1 = Total2, a fórmula deve escrever Empate (não escolher um lado).'])
       tip.addRow(['Não abra a aba Gabarito antes de tentar.'])
 
       const gab = wb.addWorksheet('Gabarito')
@@ -305,7 +324,7 @@ export const excelPacks = [
       PRODUCTS.forEach((p) => {
         const total1 = money(p[2] * p[4] + p[5])
         const total2 = money(p[2] * p[7] + p[8])
-        gab.addRow([...p, total1, total2, Math.min(total1, total2)])
+        gab.addRow([...p, total1, total2, pickSupplierOrEmpate(total1, total2, p[3], p[6])])
       })
       // Visível, mas no fim — só consulte se travar
       gab.name = 'Gabarito_so_se_travar'
@@ -321,6 +340,7 @@ export const excelPacks = [
           total1,
           total2,
           melhor: Math.min(total1, total2),
+          decisao: pickSupplierOrEmpate(total1, total2, p[3], p[6]),
           forn1: p[3],
           forn2: p[6],
         }
@@ -361,7 +381,7 @@ export const excelPacks = [
         if (hasF) formulaBonus += 1
         if (!rowOk) {
           details.push(
-            `Linha ${row}: esperado Total1=${expected[i].total1}, Total2=${expected[i].total2}, Melhor=${expected[i].melhor} (ou fornecedor mais barato)`,
+            `Linha ${row}: Total1=${expected[i].total1}, Total2=${expected[i].total2}, Melhor=${expected[i].decisao}`,
           )
         }
       }
@@ -425,7 +445,7 @@ export const excelPacks = [
         if (rowOk) ok += 1
         else {
           details.push(
-            `Linha ${i + 2}: esperado Total1=${expected[i].total1}, Total2=${expected[i].total2}, Melhor=${expected[i].melhor} (ou fornecedor mais barato)`,
+            `Linha ${i + 2}: esperado Total1=${expected[i].total1}, Total2=${expected[i].total2}, Melhor=${expected[i].decisao}`,
           )
         }
       }
@@ -576,13 +596,13 @@ export const excelPacks = [
   },
   {
     id: 'decisao',
-    title: 'Exercício 3 — Decisão de compra',
+    title: 'Exercício 3 — Decisão com Empate',
     time: '10–15 min',
     level: 'Avançado',
-    summary: 'No Excel na Web, calcule totais e escolha o melhor fornecedor com SE.',
+    summary: 'Calcule totais e use SE aninhado: A, B ou Empate quando os totais forem iguais.',
     steps: [
       'Abra no Excel na Web, salve uma cópia e preencha F, G e H.',
-      'H2: =SE(F2<G2;"A";"B")',
+      'H2: =SE(F2<G2;"A";SE(F2>G2;"B";"Empate"))',
       'Fique na aba Decisao → Arquivo → Exportar → Baixar como CSV.',
       'Envie o CSV no site para correção.',
     ],
@@ -590,31 +610,37 @@ export const excelPacks = [
     async build(ExcelJS) {
       const wb = new ExcelJS.Workbook()
       const info = wb.addWorksheet('Instrucoes')
-      info.getColumn(1).width = 90
+      info.getColumn(1).width = 95
       ;[
-        'TREINO COMPRAS — Exercício 3: Decisão',
-        'Preencha F (TotalA), G (TotalB) e H (Vencedor: A ou B).',
-        'H2 exemplo PT: =SE(F2<G2;"A";"B")',
-        'H2 exemplo EN: =IF(F2<G2,"A","B")',
+        'TREINO COMPRAS — Exercício 3: Decisão com Empate',
+        'Preencha F (TotalA), G (TotalB) e H (Vencedor).',
+        '',
+        'Fórmula do vencedor (PT-BR):',
+        '=SE(F2<G2;"A";SE(F2>G2;"B";"Empate"))',
+        '',
+        'Em inglês: =IF(F2<G2,"A",IF(F2>G2,"B","Empate"))',
+        'Se TotalA = TotalB, o Excel escreve Empate (não escolhe A nem B).',
         'Se estiver só visualizando: Editar no navegador / Salvar uma cópia.',
       ].forEach((line, i) => {
         info.getCell(i + 1, 1).value = line
       })
 
       const rows = [
-        ['Luva nitrílica G', 400, 30, 350, 80],
-        ['Parafuso inox kit', 95, 25, 110, 0],
-        ['Mangueira 1/2"', 680, 45, 620, 90],
-        ['Cabo 2,5 mm²', 280, 40, 265, 55],
-        ['Capacete', 32, 28, 29, 35],
-        ['Disco de corte', 105, 18, 97.5, 25],
+        ['Luva nitrílica G', 400, 30, 350, 80], // 430 vs 430 → Empate
+        ['Parafuso inox kit', 95, 25, 110, 0], // 120 vs 110 → B
+        ['Mangueira 1/2"', 680, 45, 620, 90], // 725 vs 710 → B
+        ['Cabo 2,5 mm²', 280, 40, 265, 55], // 320 vs 320 → Empate
+        ['Capacete', 32, 28, 29, 35], // 60 vs 64 → A
+        ['Disco de corte', 105, 18, 97.5, 25], // 123 vs 122.5 → B
+        ['Óculos proteção', 125, 20, 140, 5], // 145 vs 145 → Empate
+        ['Abraçadeira', 40, 10, 35, 15], // 50 vs 50 → Empate
       ]
 
       const ws = wb.addWorksheet('Decisao')
       ws.addRow(['Produto', 'PrecoA', 'FreteA', 'PrecoB', 'FreteB', 'TotalA', 'TotalB', 'Vencedor'])
       styleHeader(ws.getRow(1))
       rows.forEach((r) => ws.addRow([...r, null, null, null]))
-      for (let r = 2; r <= 7; r += 1) {
+      for (let r = 2; r <= rows.length + 1; r += 1) {
         ;['F', 'G', 'H'].forEach((col) => paintPractice(ws.getCell(`${col}${r}`)))
       }
       ;[22, 10, 10, 10, 10, 10, 10, 12].forEach((w, i) => {
@@ -626,22 +652,32 @@ export const excelPacks = [
       rows.forEach((r) => {
         const ta = r[1] + r[2]
         const tb = r[3] + r[4]
-        gab.addRow([r[0], ta, tb, ta < tb ? 'A' : 'B'])
+        gab.addRow([r[0], ta, tb, pickAB(ta, tb)])
       })
       for (const sheet of wb.worksheets) unlockWorksheet(sheet)
       return wb
     },
+    expected() {
+      const rows = [
+        [400, 30, 350, 80],
+        [95, 25, 110, 0],
+        [680, 45, 620, 90],
+        [280, 40, 265, 55],
+        [32, 28, 29, 35],
+        [105, 18, 97.5, 25],
+        [125, 20, 140, 5],
+        [40, 10, 35, 15],
+      ]
+      return rows.map((r) => {
+        const ta = r[0] + r[1]
+        const tb = r[2] + r[3]
+        return { ta, tb, win: pickAB(ta, tb) }
+      })
+    },
     async verify(wb) {
       const ws = wb.getWorksheet('Decisao')
       if (!ws) return { passed: false, score: 0, message: 'Não achei a aba "Decisao".' }
-      const expected = [
-        { ta: 430, tb: 430, win: 'B' },
-        { ta: 120, tb: 110, win: 'B' },
-        { ta: 725, tb: 710, win: 'B' },
-        { ta: 320, tb: 320, win: 'B' },
-        { ta: 60, tb: 64, win: 'A' },
-        { ta: 123, tb: 122.5, win: 'B' },
-      ]
+      const expected = this.expected()
 
       let ok = 0
       const details = []
@@ -649,8 +685,8 @@ export const excelPacks = [
         const row = i + 2
         const ta = cellNumber(ws.getCell(row, 6))
         const tb = cellNumber(ws.getCell(row, 7))
-        const win = cellText(ws.getCell(row, 8)).toUpperCase()
-        const good = numClose(ta, exp.ta) && numClose(tb, exp.tb) && win === exp.win
+        const win = cellText(ws.getCell(row, 8))
+        const good = numClose(ta, exp.ta) && numClose(tb, exp.tb) && winMatches(win, exp.win)
         if (good) ok += 1
         else details.push(`Linha ${row}: TotalA=${exp.ta}, TotalB=${exp.tb}, Vencedor=${exp.win}`)
       })
@@ -659,8 +695,8 @@ export const excelPacks = [
         passed,
         score: Math.round((ok / expected.length) * 100),
         message: passed
-          ? 'Decisão correta em todas as linhas!'
-          : `${ok}/${expected.length} linhas ok. Em empate, SE(F<G;"A";"B") escolhe B.`,
+          ? 'Decisão correta — inclusive nos empates!'
+          : `${ok}/${expected.length} linhas ok. Use =SE(F2<G2;"A";SE(F2>G2;"B";"Empate"))`,
         details: details.slice(0, 5),
       }
     },
@@ -685,14 +721,7 @@ export const excelPacks = [
           }
         }
       }
-      const expected = [
-        { ta: 430, tb: 430, win: 'B' },
-        { ta: 120, tb: 110, win: 'B' },
-        { ta: 725, tb: 710, win: 'B' },
-        { ta: 320, tb: 320, win: 'B' },
-        { ta: 60, tb: 64, win: 'A' },
-        { ta: 123, tb: 122.5, win: 'B' },
-      ]
+      const expected = this.expected()
       const dataRows = rows.slice(1).filter((r) => r.some((c) => String(c || '').trim() !== ''))
       let ok = 0
       const details = []
@@ -704,10 +733,8 @@ export const excelPacks = [
         }
         const ta = parseNumberLoose(row[iTa])
         const tb = parseNumberLoose(row[iTb])
-        const win = String(row[iWin] || '')
-          .trim()
-          .toUpperCase()
-        const good = numClose(ta, exp.ta) && numClose(tb, exp.tb) && win === exp.win
+        const win = row[iWin]
+        const good = numClose(ta, exp.ta) && numClose(tb, exp.tb) && winMatches(win, exp.win)
         if (good) ok += 1
         else details.push(`Linha ${i + 2}: TotalA=${exp.ta}, TotalB=${exp.tb}, Vencedor=${exp.win}`)
       })
@@ -715,8 +742,272 @@ export const excelPacks = [
         expected.length,
         ok,
         details,
-        'CSV aprovado! Decisão correta em todas as linhas.',
-        `{ok}/{total} linhas ok no CSV. Em empate, SE(F<G;"A";"B") escolhe B.`,
+        'CSV aprovado! Decisão correta — inclusive nos empates.',
+        `{ok}/{total} linhas ok. Use SE aninhado para escrever Empate.`,
+      )
+    },
+  },
+  {
+    id: 'desempate',
+    title: 'Exercício 4 — Desempate por prazo',
+    time: '15 min',
+    level: 'Avançado',
+    summary: 'Se o preço empatar, o menor prazo vence. Se preço e prazo empatam → Empate.',
+    steps: [
+      'Abra no Excel na Web e preencha a coluna F (Decisao).',
+      'F2: =SE(B2<C2;"A";SE(B2>C2;"B";SE(D2<E2;"A";SE(D2>E2;"B";"Empate"))))',
+      'Fique na aba Desempate → Exportar → CSV → envie no site.',
+    ],
+    filename: 'treino-compras-04-desempate.xlsx',
+    rows: [
+      // TotalA, TotalB, PrazoA, PrazoB → Decisao
+      ['Luva nitrílica', 430, 440, 5, 3], // A mais barato
+      ['Parafuso kit', 120, 110, 7, 10], // B mais barato
+      ['Cabo 2,5 mm', 320, 320, 4, 6], // empate preço → A prazo melhor
+      ['Capacete', 210, 210, 8, 5], // empate preço → B prazo melhor
+      ['Disco corte', 123, 123, 2, 2], // empate total → Empate
+      ['Mangueira', 710, 710, 10, 10], // Empate
+      ['Óculos', 145, 140, 3, 9], // B
+      ['Abraçadeira', 56, 56, 1, 4], // A por prazo
+    ],
+    expected() {
+      return this.rows.map((r) => {
+        const [, ta, tb, pa, pb] = r
+        let win
+        if (ta < tb) win = 'A'
+        else if (ta > tb) win = 'B'
+        else if (pa < pb) win = 'A'
+        else if (pa > pb) win = 'B'
+        else win = 'Empate'
+        return { ta, tb, pa, pb, win }
+      })
+    },
+    async build(ExcelJS) {
+      const wb = new ExcelJS.Workbook()
+      const info = wb.addWorksheet('Instrucoes')
+      info.getColumn(1).width = 100
+      ;[
+        'TREINO COMPRAS — Exercício 4: Desempate por prazo',
+        '',
+        'Regra de comprador:',
+        '1) Menor total (preço) vence',
+        '2) Se empatar no total, menor prazo (dias) vence',
+        '3) Se empatar nos dois → escreva Empate',
+        '',
+        'Fórmula em F2 (arraste):',
+        '=SE(B2<C2;"A";SE(B2>C2;"B";SE(D2<E2;"A";SE(D2>E2;"B";"Empate"))))',
+      ].forEach((line, i) => {
+        info.getCell(i + 1, 1).value = line
+      })
+
+      const ws = wb.addWorksheet('Desempate')
+      ws.addRow(['Produto', 'TotalA', 'TotalB', 'PrazoA', 'PrazoB', 'Decisao'])
+      styleHeader(ws.getRow(1))
+      this.rows.forEach((r) => ws.addRow([...r, null]))
+      for (let r = 2; r <= this.rows.length + 1; r += 1) {
+        paintPractice(ws.getCell(`F${r}`))
+      }
+      ;[20, 10, 10, 10, 10, 12].forEach((w, i) => {
+        ws.getColumn(i + 1).width = w
+      })
+
+      const gab = wb.addWorksheet('Gabarito_so_se_travar')
+      gab.addRow(['Produto', 'Decisao'])
+      this.expected().forEach((exp, i) => {
+        gab.addRow([this.rows[i][0], exp.win])
+      })
+      for (const sheet of wb.worksheets) unlockWorksheet(sheet)
+      return wb
+    },
+    async verify(wb) {
+      const ws = wb.getWorksheet('Desempate')
+      if (!ws) return { passed: false, score: 0, message: 'Não achei a aba "Desempate".' }
+      const expected = this.expected()
+      let ok = 0
+      const details = []
+      expected.forEach((exp, i) => {
+        const row = i + 2
+        const win = cellText(ws.getCell(row, 6))
+        if (winMatches(win, exp.win)) ok += 1
+        else details.push(`Linha ${row}: esperado ${exp.win}`)
+      })
+      const passed = ok === expected.length
+      return {
+        passed,
+        score: Math.round((ok / expected.length) * 100),
+        message: passed
+          ? 'Desempate perfeito — preço, prazo e Empate ok!'
+          : `${ok}/${expected.length} ok. Lembre: empate de preço → olhe o prazo.`,
+        details: details.slice(0, 5),
+      }
+    },
+    verifyCsv(rows) {
+      if (!rows?.length) return { passed: false, score: 0, message: 'CSV vazio. Exporte a aba Desempate.' }
+      const header = rows[0]
+      let iWin = colIndex(header, ['Decisao', 'decisao', 'Vencedor'])
+      if (iWin < 0) iWin = header.length >= 6 ? 5 : -1
+      if (iWin < 0) {
+        return { passed: false, score: 0, message: 'Não achei a coluna Decisao.' }
+      }
+      const expected = this.expected()
+      const dataRows = rows.slice(1).filter((r) => r.some((c) => String(c || '').trim() !== ''))
+      let ok = 0
+      const details = []
+      expected.forEach((exp, i) => {
+        const row = dataRows[i]
+        if (!row) {
+          details.push(`Falta linha ${i + 2}`)
+          return
+        }
+        if (winMatches(row[iWin], exp.win)) ok += 1
+        else details.push(`Linha ${i + 2}: esperado ${exp.win}`)
+      })
+      return gradeRows(
+        expected.length,
+        ok,
+        details,
+        'CSV aprovado! Desempate por prazo ok.',
+        `{ok}/{total} ok. Empate de preço → menor prazo; se prazo empatar → Empate.`,
+      )
+    },
+  },
+  {
+    id: 'tres-fornecedores',
+    title: 'Exercício 5 — Três fornecedores',
+    time: '15 min',
+    level: 'Desafio',
+    summary: 'Ache o menor preço entre A/B/C e diga quem venceu — ou Empate se houver mais de um mínimo.',
+    steps: [
+      'E2: =MÍNIMO(B2:D2)  (ou =MIN(B2:D2))',
+      'F2: =SE(CONT.SE(B2:D2;E2)>1;"Empate";SE(B2=E2;"A";SE(C2=E2;"B";"C")))',
+      'No Excel em inglês: COUNTIF no lugar de CONT.SE.',
+      'Exportar CSV da aba TresForn e enviar no site.',
+    ],
+    filename: 'treino-compras-05-tres-fornecedores.xlsx',
+    rows: [
+      // PrecoA, PrecoB, PrecoC
+      ['Parafuso M8', 1.1, 0.95, 1.05], // B
+      ['Arruela', 0.18, 0.15, 0.15], // Empate B e C
+      ['Luva', 8, 7.2, 7.5], // B
+      ['Óculos', 14, 14, 12.5], // C
+      ['Mangueira', 34, 31, 31], // Empate B e C
+      ['Cabo', 280, 265, 270], // B
+      ['Disjuntor', 45, 48, 45], // Empate A e C
+      ['Capacete', 32, 29, 30], // B
+    ],
+    expected() {
+      return this.rows.map((r) => {
+        const prices = [r[1], r[2], r[3]]
+        const min = Math.min(...prices)
+        const count = prices.filter((p) => numClose(p, min)).length
+        let quem
+        if (count > 1) quem = 'Empate'
+        else if (numClose(prices[0], min)) quem = 'A'
+        else if (numClose(prices[1], min)) quem = 'B'
+        else quem = 'C'
+        return { min, quem }
+      })
+    },
+    async build(ExcelJS) {
+      const wb = new ExcelJS.Workbook()
+      const info = wb.addWorksheet('Instrucoes')
+      info.getColumn(1).width = 100
+      ;[
+        'TREINO COMPRAS — Exercício 5: Três fornecedores',
+        'Coluna E = menor preço. Coluna F = quem venceu (A/B/C) ou Empate.',
+        '',
+        'E2: =MÍNIMO(B2:D2)',
+        'F2 (PT-BR): =SE(CONT.SE(B2:D2;E2)>1;"Empate";SE(B2=E2;"A";SE(C2=E2;"B";"C")))',
+        'F2 (EN): =IF(COUNTIF(B2:D2,E2)>1,"Empate",IF(B2=E2,"A",IF(C2=E2,"B","C")))',
+      ].forEach((line, i) => {
+        info.getCell(i + 1, 1).value = line
+      })
+
+      const tip = wb.addWorksheet('Dicas')
+      tip.getColumn(1).width = 100
+      tip.addRow(['Alternativa sem CONT.SE (mais longa, mas clara):'])
+      tip.addRow([
+        '=SE(OU(E(B2=E2;C2=E2);E(B2=E2;D2=E2);E(C2=E2;D2=E2));"Empate";SE(B2=E2;"A";SE(C2=E2;"B";"C")))',
+      ])
+      tip.addRow(['OU / OR e E / AND ajudam a detectar dois mínimos iguais.'])
+
+      const ws = wb.addWorksheet('TresForn')
+      ws.addRow(['Produto', 'PrecoA', 'PrecoB', 'PrecoC', 'Menor', 'Quem'])
+      styleHeader(ws.getRow(1))
+      this.rows.forEach((r) => ws.addRow([...r, null, null]))
+      for (let r = 2; r <= this.rows.length + 1; r += 1) {
+        ;['E', 'F'].forEach((col) => paintPractice(ws.getCell(`${col}${r}`)))
+      }
+      ;[20, 10, 10, 10, 10, 12].forEach((w, i) => {
+        ws.getColumn(i + 1).width = w
+      })
+
+      const gab = wb.addWorksheet('Gabarito_so_se_travar')
+      gab.addRow(['Produto', 'Menor', 'Quem'])
+      this.expected().forEach((exp, i) => {
+        gab.addRow([this.rows[i][0], exp.min, exp.quem])
+      })
+      for (const sheet of wb.worksheets) unlockWorksheet(sheet)
+      return wb
+    },
+    async verify(wb) {
+      const ws = wb.getWorksheet('TresForn')
+      if (!ws) return { passed: false, score: 0, message: 'Não achei a aba "TresForn".' }
+      const expected = this.expected()
+      let ok = 0
+      const details = []
+      expected.forEach((exp, i) => {
+        const row = i + 2
+        const min = cellNumber(ws.getCell(row, 5))
+        const quem = cellText(ws.getCell(row, 6))
+        const good = numClose(min, exp.min) && winMatches(quem, exp.quem)
+        if (good) ok += 1
+        else details.push(`Linha ${row}: Menor=${exp.min}, Quem=${exp.quem}`)
+      })
+      const passed = ok === expected.length
+      return {
+        passed,
+        score: Math.round((ok / expected.length) * 100),
+        message: passed
+          ? 'Três fornecedores ok — Empate detectado quando há dois mínimos!'
+          : `${ok}/${expected.length} ok. Se dois tiverem o menor preço → Empate.`,
+        details: details.slice(0, 5),
+      }
+    },
+    verifyCsv(rows) {
+      if (!rows?.length) return { passed: false, score: 0, message: 'CSV vazio. Exporte TresForn.' }
+      const header = rows[0]
+      let iMin = colIndex(header, ['Menor', 'menor', 'Min'])
+      let iQuem = colIndex(header, ['Quem', 'quem', 'Vencedor', 'Decisao'])
+      if (iMin < 0 || iQuem < 0) {
+        if (header.length >= 6) {
+          iMin = 4
+          iQuem = 5
+        } else {
+          return { passed: false, score: 0, message: 'Não achei Menor/Quem. Exporte a aba TresForn.' }
+        }
+      }
+      const expected = this.expected()
+      const dataRows = rows.slice(1).filter((r) => r.some((c) => String(c || '').trim() !== ''))
+      let ok = 0
+      const details = []
+      expected.forEach((exp, i) => {
+        const row = dataRows[i]
+        if (!row) {
+          details.push(`Falta linha ${i + 2}`)
+          return
+        }
+        const min = parseNumberLoose(row[iMin])
+        const quem = row[iQuem]
+        if (numClose(min, exp.min) && winMatches(quem, exp.quem)) ok += 1
+        else details.push(`Linha ${i + 2}: Menor=${exp.min}, Quem=${exp.quem}`)
+      })
+      return gradeRows(
+        expected.length,
+        ok,
+        details,
+        'CSV aprovado! Três fornecedores + Empate ok.',
+        `{ok}/{total} ok. Dois mínimos iguais → Empate.`,
       )
     },
   },

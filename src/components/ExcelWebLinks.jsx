@@ -43,7 +43,7 @@ export default function ExcelWebLinks({ progress, markExercise, setSkillExact })
       if (report.passed) {
         markExercise(`excelweb-${pack.id}`, true, 'excel', 0)
         const next = doneCount + (isDone ? 0 : 1)
-        setSkillExact('excel', Math.max(progress.skillScores.excel || 0, 55 + next * 15))
+        setSkillExact('excel', Math.min(100, Math.max(progress.skillScores.excel || 0, 40 + next * 12)))
       }
     } catch (err) {
       setResult({

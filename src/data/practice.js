@@ -46,6 +46,23 @@ export const formulaDrills = [
       '=cont.se(c:c;"Empresa A")',
     ],
   },
+  {
+    id: 'f6',
+    prompt: 'Se F2 < G2 mostre A; se F2 > G2 mostre B; se empatar mostre Empate.',
+    hint: 'SE aninhado (um SE dentro do outro).',
+    answers: [
+      '=se(f2<g2;"a";se(f2>g2;"b";"empate"))',
+      '=if(f2<g2;"a";if(f2>g2;"b";"empate"))',
+      '=se(f2<g2;"A";se(f2>g2;"B";"Empate"))',
+      '=if(f2<g2,"A",if(f2>g2,"B","Empate"))',
+    ],
+  },
+  {
+    id: 'f7',
+    prompt: 'Total da compra: quantidade em C2 × preço em E2 + frete em F2.',
+    hint: 'Multiplicação e soma na mesma fórmula.',
+    answers: ['=c2*e2+f2', '=c2*e2+f2'],
+  },
 ]
 
 export function normalizeFormula(input) {

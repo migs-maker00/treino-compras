@@ -1,12 +1,16 @@
 /** Exercícios de planilha no navegador (não precisa de Excel/chave). */
 
+function pickAB(ta, tb) {
+  if (Math.abs(ta - tb) < 0.02) return 'Empate'
+  return ta < tb ? 'A' : 'B'
+}
+
 export const browserSheets = [
   {
     id: 'cotacao',
     title: 'Cotação (no navegador)',
-    help: 'Nas células amarelas, digite fórmulas como no Excel. Ex.: =C2*E2+F2 e =MIN(J2:K2)',
+    help: 'Totais com Qtd×Preço+Frete. Em Melhor: fornecedor mais barato ou Empate.',
     headers: ['Produto', 'Spec', 'Qtd', 'Forn1', 'Preco1', 'Frete1', 'Forn2', 'Preco2', 'Frete2', 'Total1', 'Total2', 'Melhor'],
-    // row 0 = header visually; data starts row 1 in 0-based sheet row index for body
     rows: [
       ['Parafuso inox M8x40', 'Sextavado A2', 100, 'Parafusos BR', 0.95, 25, 'FixNaval', 1.1, 0],
       ['Arruela inox M8', 'Lisa A2', 100, 'Parafusos BR', 0.18, 15, 'MetalMax', 0.15, 20],
@@ -19,22 +23,19 @@ export const browserSheets = [
       ['Disjuntor 20A', 'Bipolar', 5, 'EletroMar', 45, 22, 'Fios & Cia', 48, 0],
       ['Capacete', 'Com jugular', 6, 'EPI Total', 32, 28, 'SeguraMais', 29, 35],
     ],
-    editableCols: [9, 10, 11], // J K L (0-based)
+    editableCols: [9, 10, 11],
     hints: [
-      'J2: =C2*E2+F2   (Qtd × Preço1 + Frete1)',
-      'K2: =C2*H2+I2   (Qtd × Preço2 + Frete2)',
-      'L2: =MIN(J2:K2)  ou  =MÍNIMO(J2:K2)  — menor total (número)',
-      'Depois arraste a lógica mentalmente para as outras linhas (copie ajustando o número da linha).',
+      'J2: =C2*E2+F2',
+      'K2: =C2*H2+I2',
+      'L2: =SE(J2=K2;"Empate";SE(J2<K2;D2;G2))',
+      'Cabo 2,5 mm² deve dar Empate (totais iguais).',
     ],
     expected(row) {
       const qtd = row[2]
-      const preco1 = row[4]
-      const frete1 = row[5]
-      const preco2 = row[7]
-      const frete2 = row[8]
-      const t1 = qtd * preco1 + frete1
-      const t2 = qtd * preco2 + frete2
-      return [t1, t2, Math.min(t1, t2)]
+      const t1 = qtd * row[4] + row[5]
+      const t2 = qtd * row[7] + row[8]
+      const decisao = Math.abs(t1 - t2) < 0.02 ? 'Empate' : t1 < t2 ? row[3] : row[6]
+      return [t1, t2, decisao]
     },
   },
   {
@@ -65,7 +66,6 @@ export const browserSheets = [
       ['007', 'Disjuntor 20A', 'EletroMar', 45],
       ['008', 'Capacete', 'EPI Total', 32],
     ],
-    // lookup placed starting at row 14 in sheet (1-based)
     lookupStartRow: 14,
     hints: [
       'C2: =PROCV(A2;A14:D21;4;0)',
@@ -80,8 +80,8 @@ export const browserSheets = [
   },
   {
     id: 'decisao',
-    title: 'Decisão com SE (no navegador)',
-    help: 'TotalA, TotalB e Vencedor (A ou B). Em empate, SE(F2<G2;"A";"B") escolhe B.',
+    title: 'Decisão + Empate (no navegador)',
+    help: 'Totais e Vencedor. Se empatar, a fórmula deve escrever Empate.',
     headers: ['Produto', 'PrecoA', 'FreteA', 'PrecoB', 'FreteB', 'TotalA', 'TotalB', 'Vencedor'],
     rows: [
       ['Luva nitrílica G', 400, 30, 350, 80],
@@ -90,17 +90,82 @@ export const browserSheets = [
       ['Cabo 2,5 mm²', 280, 40, 265, 55],
       ['Capacete', 32, 28, 29, 35],
       ['Disco de corte', 105, 18, 97.5, 25],
+      ['Óculos proteção', 125, 20, 140, 5],
+      ['Abraçadeira', 40, 10, 35, 15],
     ],
     editableCols: [5, 6, 7],
     hints: [
       'F2: =B2+C2',
       'G2: =D2+E2',
-      'H2: =SE(F2<G2;"A";"B")  ou  =IF(F2<G2;"A";"B")',
+      'H2: =SE(F2<G2;"A";SE(F2>G2;"B";"Empate"))',
     ],
     expected(row) {
       const ta = row[1] + row[2]
       const tb = row[3] + row[4]
-      return [ta, tb, ta < tb ? 'A' : 'B']
+      return [ta, tb, pickAB(ta, tb)]
+    },
+  },
+  {
+    id: 'desempate',
+    title: 'Desempate por prazo (no navegador)',
+    help: 'Menor total vence. Se empatar no total, menor prazo vence. Se empatar nos dois → Empate.',
+    headers: ['Produto', 'TotalA', 'TotalB', 'PrazoA', 'PrazoB', 'Decisao'],
+    rows: [
+      ['Luva nitrílica', 430, 440, 5, 3],
+      ['Parafuso kit', 120, 110, 7, 10],
+      ['Cabo 2,5 mm', 320, 320, 4, 6],
+      ['Capacete', 210, 210, 8, 5],
+      ['Disco corte', 123, 123, 2, 2],
+      ['Mangueira', 710, 710, 10, 10],
+      ['Óculos', 145, 140, 3, 9],
+      ['Abraçadeira', 56, 56, 1, 4],
+    ],
+    editableCols: [5],
+    hints: [
+      'F2: =SE(B2<C2;"A";SE(B2>C2;"B";SE(D2<E2;"A";SE(D2>E2;"B";"Empate"))))',
+      'Primeiro compara preço (B×C). Só se empatar, olha prazo (D×E).',
+    ],
+    expected(row) {
+      const [, ta, tb, pa, pb] = row
+      let win
+      if (ta < tb) win = 'A'
+      else if (ta > tb) win = 'B'
+      else if (pa < pb) win = 'A'
+      else if (pa > pb) win = 'B'
+      else win = 'Empate'
+      return [win]
+    },
+  },
+  {
+    id: 'tres-fornecedores',
+    title: 'Três fornecedores (no navegador)',
+    help: 'Menor preço entre A/B/C. Se dois tiverem o mínimo → Empate.',
+    headers: ['Produto', 'PrecoA', 'PrecoB', 'PrecoC', 'Menor', 'Quem'],
+    rows: [
+      ['Parafuso M8', 1.1, 0.95, 1.05],
+      ['Arruela', 0.18, 0.15, 0.15],
+      ['Luva', 8, 7.2, 7.5],
+      ['Óculos', 14, 14, 12.5],
+      ['Mangueira', 34, 31, 31],
+      ['Cabo', 280, 265, 270],
+      ['Disjuntor', 45, 48, 45],
+      ['Capacete', 32, 29, 30],
+    ],
+    editableCols: [4, 5],
+    hints: [
+      'E2: =MIN(B2:D2)',
+      'F2: =SE(CONT.SE(B2:D2;E2)>1;"Empate";SE(B2=E2;"A";SE(C2=E2;"B";"C")))',
+    ],
+    expected(row) {
+      const prices = [row[1], row[2], row[3]]
+      const min = Math.min(...prices)
+      const count = prices.filter((p) => Math.abs(p - min) < 0.02).length
+      let quem
+      if (count > 1) quem = 'Empate'
+      else if (Math.abs(prices[0] - min) < 0.02) quem = 'A'
+      else if (Math.abs(prices[1] - min) < 0.02) quem = 'B'
+      else quem = 'C'
+      return [min, quem]
     },
   },
 ]

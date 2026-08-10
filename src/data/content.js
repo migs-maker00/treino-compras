@@ -154,6 +154,11 @@ export const excelFormulas = [
   { name: '=MÍNIMO()', use: 'Achar o menor preço da linha.', example: '=MÍNIMO(E2:G2)' },
   { name: '=MÁXIMO()', use: 'Ver o preço mais alto (alerta).', example: '=MÁXIMO(E2:G2)' },
   { name: '=SE()', use: 'Marcar automaticamente o melhor preço.', example: '=SE(E2=H2;"Melhor";"")' },
+  {
+    name: '=SE() aninhado',
+    use: 'Decidir A, B ou Empate quando os totais empatam.',
+    example: '=SE(F2<G2;"A";SE(F2>G2;"B";"Empate"))',
+  },
   { name: '=CONT.SE()', use: 'Contar quantos itens um fornecedor tem.', example: '=CONT.SE(C:C;"Empresa A")' },
   { name: '=PROCV()', use: 'Buscar preço/fornecedor pelo código do produto.', example: '=PROCV(A2;Tabela;4;FALSO)' },
   { name: '=PROCX()', use: 'Versão moderna do PROCV — mais flexível.', example: '=PROCX(A2;códigos;preços)' },
