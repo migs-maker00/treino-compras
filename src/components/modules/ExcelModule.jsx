@@ -21,10 +21,10 @@ export default function ExcelModule({ setSkillExact, markExercise, progress }) {
   return (
     <div className="panel">
       <section className="hero">
-        <h1>🖥️ Excel — pratique fórmulas de verdade</h1>
+        <h1>🖥️ Excel para cotação (apoio)</h1>
         <p>
-          Abra os exercícios no Excel na Web (site da Microsoft) ou treine na planilha daqui.
-          Células amarelas = onde digitar as fórmulas.
+          Não é trilha de Excel avançado. Aqui você treina o suficiente para comparar fornecedores:
+          total, melhor preço e empate. Opcional: PROCV e desempate por prazo.
         </p>
       </section>
 

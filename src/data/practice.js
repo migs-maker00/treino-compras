@@ -146,6 +146,7 @@ export function scoreSearchQuery(query, mission) {
 export const emailMissions = [
   {
     id: 'e1',
+    templateId: 'cotacao',
     title: 'Pedir cotação',
     brief: 'Peça cotação de mangueira hidráulica 1/2", 20 metros.',
     checks: [
@@ -157,12 +158,12 @@ export const emailMissions = [
       { id: 'preco', label: 'Pede preço', test: (t) => /pre[cç]o|valor/i.test(t) },
       { id: 'prazo', label: 'Pede prazo', test: (t) => /prazo|entrega/i.test(t) },
       { id: 'disp', label: 'Pede disponibilidade', test: (t) => /dispon/i.test(t) },
-      { id: 'pag', label: 'Pede pagamento (ou condições)', test: (t) => /pagament|condi[cç]/i.test(t) },
       { id: 'fim', label: 'Tem encerramento', test: (t) => /obrigad|atenciosamente|aguardo/i.test(t) },
     ],
   },
   {
     id: 'e2',
+    templateId: 'cobranca',
     title: 'Cobrar retorno',
     brief: 'Cobre o orçamento da luva nitrílica G (50 pares) que não retornou.',
     checks: [
@@ -177,6 +178,7 @@ export const emailMissions = [
   },
   {
     id: 'e3',
+    templateId: 'confirmacao',
     title: 'Confirmar pedido',
     brief: 'Confirme pedido de 100 parafusos inox M8 x 40 mm.',
     checks: [
@@ -186,6 +188,52 @@ export const emailMissions = [
       { id: 'spec', label: 'Cita inox e M8', test: (t) => /inox/i.test(t) && /m8/i.test(t) },
       { id: 'qtd', label: 'Cita 100', test: (t) => /100/i.test(t) },
       { id: 'prazo', label: 'Pede confirmação de prazo', test: (t) => /prazo|entrega|confirm/i.test(t) },
+      { id: 'fim', label: 'Tem encerramento', test: (t) => /obrigad|atenciosamente|aguardo/i.test(t) },
+    ],
+  },
+  {
+    id: 'e4',
+    templateId: 'entrega',
+    title: 'Status de entrega',
+    brief: 'Pergunte o status da entrega de 100 parafusos sextavados M8 x 40 mm.',
+    checks: [
+      { id: 'assunto', label: 'Assunto de status/entrega', test: (t, s) => /status|entrega|pedido|acompanh/i.test(s + t) },
+      { id: 'saudacao', label: 'Tem saudação', test: (t) => /bom dia|boa tarde|olá|ola/i.test(t) },
+      { id: 'produto', label: 'Cita parafuso', test: (t) => /parafuso/i.test(t) },
+      { id: 'spec', label: 'Cita M8 ou 40', test: (t) => /m8|40/i.test(t) },
+      { id: 'qtd', label: 'Cita 100', test: (t) => /100/i.test(t) },
+      { id: 'status', label: 'Pede status/previsão', test: (t) => /status|previs[aã]o|saiu|cheg|rastre/i.test(t) },
+      { id: 'fim', label: 'Tem encerramento', test: (t) => /obrigad|atenciosamente|aguardo/i.test(t) },
+    ],
+  },
+  {
+    id: 'e5',
+    templateId: 'divergencia',
+    title: 'Avisar divergência',
+    brief: 'Avisar o fornecedor: pediu 50 pares de luva nitrílica G e chegaram só 40.',
+    checks: [
+      { id: 'assunto', label: 'Assunto de divergência/recebimento', test: (t, s) => /diverg|receb|falta|pedido|luva/i.test(s + t) },
+      { id: 'saudacao', label: 'Tem saudação', test: (t) => /bom dia|boa tarde|olá|ola/i.test(t) },
+      { id: 'produto', label: 'Cita luva', test: (t) => /luva/i.test(t) },
+      { id: 'pedido', label: 'Cita o que foi pedido (50)', test: (t) => /50|pedido/i.test(t) },
+      { id: 'chegou', label: 'Cita o que chegou (40)', test: (t) => /40|cheg|falt/i.test(t) },
+      { id: 'acao', label: 'Pede regularizar/verificar', test: (t) => /regular|verific|repor|envio|faltante|resolver/i.test(t) },
+      { id: 'fim', label: 'Tem encerramento', test: (t) => /obrigad|atenciosamente|aguardo/i.test(t) },
+    ],
+  },
+  {
+    id: 'e6',
+    templateId: 'esclarecer',
+    title: 'Esclarecer pedido',
+    brief: 'Alguém pediu só “mangueira”. Escreva pedindo medida, tipo, quantidade e prazo antes de cotar.',
+    checks: [
+      { id: 'assunto', label: 'Assunto de esclarecimento', test: (t, s) => /esclarec|informa|pedido|mangueira|d[uú]vida/i.test(s + t) },
+      { id: 'saudacao', label: 'Tem saudação', test: (t) => /bom dia|boa tarde|olá|ola/i.test(t) },
+      { id: 'vago', label: 'Menciona que o pedido está incompleto/vago', test: (t) => /vago|falt|especif|confirma|esclarec|dados/i.test(t) },
+      { id: 'medida', label: 'Pede medida', test: (t) => /medida|1\/2|polegada|di[aâ]metro/i.test(t) },
+      { id: 'tipo', label: 'Pede tipo/uso', test: (t) => /tipo|hidr|uso|aplica/i.test(t) },
+      { id: 'qtd', label: 'Pede quantidade', test: (t) => /quant|metro/i.test(t) },
+      { id: 'prazo', label: 'Pede prazo necessário', test: (t) => /prazo|quando|urg/i.test(t) },
       { id: 'fim', label: 'Tem encerramento', test: (t) => /obrigad|atenciosamente|aguardo/i.test(t) },
     ],
   },

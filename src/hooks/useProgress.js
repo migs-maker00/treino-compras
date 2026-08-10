@@ -3,10 +3,10 @@ import { useEffect, useMemo, useState } from 'react'
 const KEY = 'treino-compras-progress-v2'
 
 export const SKILLS = [
-  'excel',
   'pesquisa',
   'email',
   'recebimento',
+  'excel',
   'materiais',
   'mentalidade',
   'simulacao',

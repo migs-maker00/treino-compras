@@ -1,34 +1,34 @@
 export const modules = [
   {
-    id: 'excel',
-    icon: '🖥️',
-    title: 'Excel e computador',
-    short: 'Planilhas, filtros e fórmulas essenciais',
-    priority: 'Prioridade nº 1',
-    color: 'teal',
-  },
-  {
     id: 'pesquisa',
     icon: '🔎',
     title: 'Pesquisa e cotação',
-    short: 'Encontrar e comparar fornecedores',
-    priority: 'Habilidade-chave',
+    short: 'Achar fornecedor certo no PC e comparar opções',
+    priority: 'Dia a dia nº 1',
     color: 'steel',
   },
   {
     id: 'email',
     icon: '📧',
     title: 'E-mail profissional',
-    short: 'Escrever claro e pedir cotação',
-    priority: 'Uso diário',
+    short: 'Cotação, cobrança, confirmação e status de entrega',
+    priority: 'Caixa de entrada',
     color: 'copper',
   },
   {
     id: 'recebimento',
     icon: '📦',
     title: 'Recebimento e conferência',
-    short: 'Conferir o que chegou vs. o pedido',
-    priority: 'Operação',
+    short: 'Separar, conferir e bater pedido × mercadoria × NF',
+    priority: 'Operação diária',
+    color: 'teal',
+  },
+  {
+    id: 'excel',
+    icon: '🖥️',
+    title: 'Excel para cotação',
+    short: 'Só o necessário: comparar preços, frete e empate',
+    priority: 'Apoio no PC',
     color: 'teal',
   },
   {
@@ -36,15 +36,15 @@ export const modules = [
     icon: '⚓',
     title: 'Materiais e categorias',
     short: 'Ferragens, hidráulica, EPI e mais',
-    priority: 'Vantagem',
+    priority: 'Conhecer o produto',
     color: 'steel',
   },
   {
     id: 'mentalidade',
     icon: '🧠',
     title: 'Pensar como comprador',
-    short: 'Fazer as perguntas certas',
-    priority: 'Diferencial',
+    short: 'Perguntas certas antes de comprar ou aceitar',
+    priority: 'Critério',
     color: 'copper',
   },
 ]
@@ -52,85 +52,85 @@ export const modules = [
 export const weekPlan = [
   {
     day: 1,
-    title: 'Excel básico',
-    time: '2h',
-    module: 'excel',
-    tasks: [
-      'Criar e organizar planilhas',
-      'Filtros e ordenação A→Z',
-      'Congelar cabeçalho e formatar células',
-      'Fórmulas: SOMA, MÉDIA, MÍNIMO, MÁXIMO',
-    ],
-  },
-  {
-    day: 2,
-    title: 'Excel aplicado',
-    time: '2h',
-    module: 'excel',
-    tasks: [
-      'Criar planilha COTAÇÃO DE FORNECEDORES',
-      'Simular 20 produtos com 2 fornecedores',
-      'Usar SE para marcar o melhor preço',
-      'Praticar PROCV / PROCX no simulador',
-    ],
-  },
-  {
-    day: 3,
     title: 'Pesquisa de fornecedores',
     time: '1–2h',
     module: 'pesquisa',
     tasks: [
-      'Escolher 10 produtos do catálogo',
-      'Encontrar 3 fornecedores para cada',
+      'Transformar pedido vago em busca específica',
+      'Achar 2–3 fornecedores por item',
       'Anotar preço, frete, prazo e disponibilidade',
       'Comparar e escolher a melhor opção',
     ],
   },
   {
-    day: 4,
-    title: 'E-mail profissional',
-    time: '1h',
+    day: 2,
+    title: 'E-mail do dia a dia',
+    time: '1–2h',
     module: 'email',
     tasks: [
-      'Pedido de cotação',
-      'Cobrança de orçamento',
-      'Confirmação de pedido',
-      'Acompanhamento de entrega',
+      'Pedir cotação',
+      'Cobrar retorno',
+      'Confirmar pedido',
+      'Acompanhar entrega e avisar divergência',
+    ],
+  },
+  {
+    day: 3,
+    title: 'Recebimento e conferência',
+    time: '1–2h',
+    module: 'recebimento',
+    tasks: [
+      'Conferir produto, quantidade e especificação',
+      'Bater mercadoria com NF e pedido',
+      'Treinar casos: falta, erro, danificado, parcial',
+      'Saber o que fazer quando não bate',
+    ],
+  },
+  {
+    day: 4,
+    title: 'Excel só para cotação',
+    time: '1–2h',
+    module: 'excel',
+    tasks: [
+      'Montar tabela simples de cotação',
+      'Calcular total (qtd × preço + frete)',
+      'Marcar melhor opção ou Empate',
+      'Opcional: PROCV / desempate por prazo',
     ],
   },
   {
     day: 5,
     title: 'Materiais',
-    time: '2h',
+    time: '1–2h',
     module: 'materiais',
     tasks: [
-      'Estudar ferragens e ferramentas',
-      'Estudar hidráulica e elétrica',
-      'Estudar EPI e consumíveis',
-      'Fazer o quiz de categorias',
+      'Ferragens e ferramentas',
+      'Hidráulica e elétrica',
+      'EPI e consumíveis',
+      'Quiz rápido de categorias',
     ],
   },
   {
     day: 6,
-    title: 'Logística e fluxo',
-    time: '1–2h',
-    module: 'recebimento',
+    title: 'Critério de comprador',
+    time: '1h',
+    module: 'mentalidade',
     tasks: [
-      'Mapear: pedido → compra → transporte → conferência',
-      'Treinar conferência com divergências',
-      'Revisar termos: NF, lead time, frete, PO',
+      'Perguntas antes de comprar',
+      'Quando pedir esclarecimento por e-mail',
+      'Revisar termos: NF, frete, prazo, disponibilidade',
     ],
   },
   {
     day: 7,
-    title: 'Simulação completa',
-    time: '2h',
+    title: 'Simulação do dia',
+    time: '1–2h',
     module: 'simulacao',
     tasks: [
-      'Entender o pedido do comandante',
+      'Entender o pedido',
       'Pesquisar e comparar fornecedores',
-      'Montar cotação e escolher a melhor opção',
-      'Conferir a mercadoria recebida',
+      'Escolher a melhor opção',
+      'Conferir o que chegou',
     ],
   },
 ]
@@ -214,7 +214,7 @@ Gostaria de solicitar cotação para o seguinte item:
 • Medida: 1/2"
 • Quantidade: 20 metros
 
-Favor informar preço, disponibilidade, prazo de entrega e condições de pagamento.
+Favor informar preço, disponibilidade e prazo de entrega.
 
 Obrigado.`,
   },
@@ -256,6 +256,39 @@ Atenciosamente.`,
 Gostaríamos de saber o status da entrega do pedido de parafusos sextavados M8 x 40 mm (100 un.).
 
 Já saiu para entrega? Previsão de chegada?
+
+Obrigado.`,
+  },
+  {
+    id: 'divergencia',
+    title: 'Avisar divergência no recebimento',
+    subject: 'Divergência no recebimento – Pedido luvas nitrílicas G',
+    body: `Bom dia,
+
+Recebemos o pedido de luvas nitrílicas G (50 pares) e encontramos divergência:
+
+• Pedido: 50 pares
+• Chegou: 40 pares
+
+Podem verificar e nos informar como vão regularizar a falta?
+
+Obrigado.`,
+  },
+  {
+    id: 'esclarecer',
+    title: 'Pedir esclarecimento do pedido',
+    subject: 'Esclarecimento de pedido – mangueira',
+    body: `Bom dia,
+
+Recebemos a solicitação de “mangueira”, mas faltam dados para cotar certo.
+
+Podem confirmar:
+• Medida (ex.: 1/2")
+• Tipo (hidráulica / uso)
+• Quantidade (metros)
+• Prazo necessário
+
+Assim pesquisamos o item correto.
 
 Obrigado.`,
   },

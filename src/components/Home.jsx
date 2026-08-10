@@ -16,19 +16,22 @@ export default function Home({ onNavigate, progress, toggleDay, skillScores, per
     <div className="panel">
       <section className="hero">
         <p style={{ margin: '0 0 0.5rem', color: 'var(--teal)', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: '0.8rem' }}>
-          Treino Compras · V2
+          Treino Compras · rotina do cargo
         </p>
-        <h1>Chegue no primeiro dia sabendo executar o básico.</h1>
+        <h1>Pesquisar, responder e-mail e conferir o que chegou.</h1>
         <p>
-          Não é só aprender conceitos. Aqui você treina situações reais: pesquisar, cotar, escrever
-          e-mail, conferir mercadoria e decidir com critério — com pontuação por habilidade.
+          Treino objetivo do dia a dia: achar fornecedor no PC, escrever e-mail claro, acompanhar
+          entrega e conferir mercadoria. Excel entra só como apoio para comparar cotações.
         </p>
         <div className="hero-actions">
-          <button className="btn btn-primary" onClick={() => onNavigate('excel')}>
-            Começar praticando Excel
+          <button className="btn btn-primary" onClick={() => onNavigate('pesquisa')}>
+            Começar pela pesquisa
           </button>
-          <button className="btn btn-ghost" onClick={() => onNavigate('simulacao')}>
-            Simulação de um dia
+          <button className="btn btn-ghost" onClick={() => onNavigate('email')}>
+            Treinar e-mail
+          </button>
+          <button className="btn btn-soft" onClick={() => onNavigate('recebimento')}>
+            Treinar conferência
           </button>
         </div>
         <p style={{ marginTop: '1rem', color: 'rgba(242,245,247,0.75)' }}>
@@ -36,7 +39,7 @@ export default function Home({ onNavigate, progress, toggleDay, skillScores, per
         </p>
       </section>
 
-      <h2 className="section-title">Skills (domínio real)</h2>
+      <h2 className="section-title">O que o dia pede</h2>
       <div className="cards">
         {SKILLS.map((id) => (
           <div key={id} className="card" style={{ cursor: 'default' }}>
@@ -76,7 +79,10 @@ export default function Home({ onNavigate, progress, toggleDay, skillScores, per
 
       <div className="light-panel">
         <h2 style={{ marginTop: 0 }}>Plano de 7 dias</h2>
-        <p className="muted">Marque o dia só depois de treinar. Progresso fica salvo neste navegador.</p>
+        <p className="muted">
+          Ordem alinhada ao cargo: pesquisa → e-mail → conferência → Excel de apoio. Marque o dia
+          depois de treinar.
+        </p>
         {weekPlan.map((d) => {
           const done = progress.completedDays.includes(d.day)
           return (

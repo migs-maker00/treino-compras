@@ -10,7 +10,9 @@ export default function EmailModule({ progress, setSkillExact, markExercise }) {
   const [showModel, setShowModel] = useState(false)
 
   const mission = emailMissions.find((m) => m.id === missionId)
-  const model = emailTemplates[emailMissions.findIndex((m) => m.id === missionId)] || emailTemplates[0]
+  const model =
+    emailTemplates.find((t) => t.id === mission.templateId) ||
+    emailTemplates[0]
 
   const evaluation = useMemo(() => {
     const results = mission.checks.map((c) => ({
@@ -30,8 +32,11 @@ export default function EmailModule({ progress, setSkillExact, markExercise }) {
   return (
     <div className="panel">
       <section className="hero">
-        <h1>📧 E-mail que resolve</h1>
-        <p>Escreva claro: produto, especificação, quantidade e o que o fornecedor precisa responder.</p>
+        <h1>📧 E-mail do dia a dia</h1>
+        <p>
+          Cotação, cobrança de retorno, confirmação, status de entrega e aviso de divergência —
+          o que mais aparece na caixa de entrada.
+        </p>
       </section>
 
       <div className="light-panel">
@@ -101,7 +106,10 @@ export default function EmailModule({ progress, setSkillExact, markExercise }) {
                 const doneCount = emailMissions.filter(
                   (m) => progress.exerciseDone[`email-${m.id}`] || m.id === mission.id,
                 ).length
-                setSkillExact('email', Math.min(100, 25 + doneCount * 25))
+                setSkillExact(
+                  'email',
+                  Math.min(100, Math.round((doneCount / emailMissions.length) * 100)),
+                )
               }
             }}
           >

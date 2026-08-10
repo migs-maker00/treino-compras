@@ -6,8 +6,8 @@ export default function PlanoModule({ progress, toggleDay, onNavigate, skillScor
       <section className="hero">
         <h1>📅 Plano de 7 dias</h1>
         <p>
-          Meta: chegar no primeiro dia sabendo executar o básico. Marque o dia só depois de praticar
-          de verdade.
+          Meta: rotina leve e segura — pesquisar, cuidar do e-mail e conferir mercadoria. Excel só
+          como apoio. Marque o dia depois de praticar de verdade.
         </p>
       </section>
 
