@@ -601,8 +601,9 @@ export const excelPacks = [
     level: 'Avançado',
     summary: 'Calcule totais e use SE aninhado: A, B ou Empate quando os totais forem iguais.',
     steps: [
-      'Abra no Excel na Web, salve uma cópia e preencha F, G e H.',
-      'H2: =SE(F2<G2;"A";SE(F2>G2;"B";"Empate"))',
+      'Abra no Excel na Web (link atualizado do site), salve uma cópia e preencha F, G e H.',
+      'São 8 produtos nas linhas 2 a 9 (inclui Óculos e Abraçadeira no final).',
+      'H2: =SE(F2<G2;"A";SE(F2>G2;"B";"Empate")) — arraste até H9.',
       'Fique na aba Decisao → Arquivo → Exportar → Baixar como CSV.',
       'Envie o CSV no site para correção.',
     ],
@@ -613,7 +614,8 @@ export const excelPacks = [
       info.getColumn(1).width = 95
       ;[
         'TREINO COMPRAS — Exercício 3: Decisão com Empate',
-        'Preencha F (TotalA), G (TotalB) e H (Vencedor).',
+        'Preencha F (TotalA), G (TotalB) e H (Vencedor) nas linhas 2 a 9 (8 produtos).',
+        'Linha 8 = Óculos proteção | Linha 9 = Abraçadeira',
         '',
         'Fórmula do vencedor (PT-BR):',
         '=SE(F2<G2;"A";SE(F2>G2;"B";"Empate"))',
@@ -723,6 +725,18 @@ export const excelPacks = [
       }
       const expected = this.expected()
       const dataRows = rows.slice(1).filter((r) => r.some((c) => String(c || '').trim() !== ''))
+      if (dataRows.length < expected.length) {
+        return {
+          passed: false,
+          score: Math.round((dataRows.length / expected.length) * 100),
+          message: `Seu CSV tem ${dataRows.length} produto(s), mas o exercício tem ${expected.length} (linhas 2 a ${expected.length + 1}). Abra de novo o exercício pelo site (arquivo atualizado) — deve aparecer Óculos na linha 8 e Abraçadeira na linha 9.`,
+          details: [
+            'Feche a cópia antiga no Excel Online.',
+            'No site: Exercício 3 → Abrir exercício no Excel na Web.',
+            'Salve uma nova cópia e preencha F, G e H até a linha 9.',
+          ],
+        }
+      }
       let ok = 0
       const details = []
       expected.forEach((exp, i) => {
@@ -736,7 +750,7 @@ export const excelPacks = [
         const win = row[iWin]
         const good = numClose(ta, exp.ta) && numClose(tb, exp.tb) && winMatches(win, exp.win)
         if (good) ok += 1
-        else details.push(`Linha ${i + 2}: TotalA=${exp.ta}, TotalB=${exp.tb}, Vencedor=${exp.win}`)
+        else details.push(`Linha ${i + 2}: esperado TotalA=${exp.ta}, TotalB=${exp.tb}, Vencedor=${exp.win}`)
       })
       return gradeRows(
         expected.length,
