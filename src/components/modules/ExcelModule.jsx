@@ -81,7 +81,7 @@ export default function ExcelModule({ setSkillExact, markExercise, progress }) {
           <>
             <h2 style={{ marginTop: 0 }}>Aquecimento no site</h2>
             <p className="muted">
-              Antes de abrir o Excel, aqueça digitando as fórmulas aqui. Depois faça os arquivos .xlsx.
+              Antes de abrir o Excel, aqueça digitando as fórmulas aqui. Depois faça no Excel Web e envie o CSV.
             </p>
             <div className="formula-grid" style={{ marginBottom: '1rem' }}>
               {excelFormulas.map((f) => (

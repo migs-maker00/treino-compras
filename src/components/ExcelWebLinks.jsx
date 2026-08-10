@@ -49,7 +49,7 @@ export default function ExcelWebLinks({ progress, markExercise, setSkillExact })
       setResult({
         passed: false,
         score: 0,
-        message: `Não consegui ler o arquivo. No Excel na Web: Arquivo → Baixar → Microsoft Excel (.xlsx) e envie esse arquivo. (${err.message})`,
+        message: `Não consegui ler o arquivo. Exporte como CSV (Arquivo → Exportar → Baixar como CSV) e envie de novo. (${err.message})`,
       })
     } finally {
       setBusy(false)
@@ -60,8 +60,8 @@ export default function ExcelWebLinks({ progress, markExercise, setSkillExact })
   return (
     <div>
       <p className="muted">
-        Abra no <strong>Excel na Web</strong>, preencha as células amarelas e depois envie o arquivo
-        para correção. Só conclui se estiver certo.
+        Abra no <strong>Excel na Web</strong>, preencha as células amarelas e depois envie o{' '}
+        <strong>CSV</strong> (ou .xlsx, se tiver) para correção. Só conclui se estiver certo.
       </p>
 
       <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
@@ -108,11 +108,18 @@ export default function ExcelWebLinks({ progress, markExercise, setSkillExact })
       <div className="mini-card" style={{ marginBottom: '1rem' }}>
         <strong>Passo a passo com correção</strong>
         <ol style={{ marginBottom: 0 }}>
-          <li>Abra o exercício no Excel na Web.</li>
-          <li>Salve uma cópia no OneDrive e edite as células amarelas.</li>
-          <li>No Excel na Web: <strong>Arquivo → Baixar → Microsoft Excel (.xlsx)</strong>.</li>
-          <li>Envie esse arquivo aqui para o site corrigir.</li>
+          <li>Abra o exercício no Excel na Web e edite as células amarelas.</li>
+          <li>
+            Fique na aba do exercício (Cotacao, Pedidos ou Decisao) — não na de Instruções.
+          </li>
+          <li>
+            <strong>Arquivo → Exportar → Baixar como CSV</strong> (CSV UTF-8 também serve).
+          </li>
+          <li>Envie o CSV aqui para o site corrigir.</li>
         </ol>
+        <p className="muted" style={{ marginBottom: 0, fontSize: '0.85rem' }}>
+          PDF e ODS não servem para correção. Se aparecer .xlsx, também aceitamos.
+        </p>
       </div>
 
       <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '0.8rem' }}>
@@ -125,12 +132,12 @@ export default function ExcelWebLinks({ progress, markExercise, setSkillExact })
           disabled={busy}
           onClick={() => inputRef.current?.click()}
         >
-          {busy ? 'Corrigindo…' : '2. Enviar para correção (.xlsx)'}
+          {busy ? 'Corrigindo…' : '2. Enviar para correção (.csv)'}
         </button>
         <input
           ref={inputRef}
           type="file"
-          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           hidden
           onChange={(e) => handleUpload(e.target.files?.[0])}
         />

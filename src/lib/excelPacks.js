@@ -71,10 +71,86 @@ export function publicPackUrl(filename) {
 }
 
 function numClose(a, b, tol = 0.02) {
-  const x = Number(a)
+  const x = Number(String(a).replace(',', '.'))
   const y = Number(b)
   if (!Number.isFinite(x) || !Number.isFinite(y)) return false
   return Math.abs(x - y) <= tol
+}
+
+function parseNumberLoose(v) {
+  if (v == null || v === '') return null
+  if (typeof v === 'number' && Number.isFinite(v)) return v
+  const s = String(v).trim().replace(/\s/g, '').replace(',', '.')
+  if (!s) return null
+  const n = Number(s)
+  return Number.isFinite(n) ? n : null
+}
+
+/** Parse CSV/TSV exported from Excel Web / Sheets (vírgula ou ponto-e-vírgula). */
+export function parseCsvText(text) {
+  const raw = String(text || '').replace(/^\uFEFF/, '')
+  const lines = raw.split(/\r?\n/).filter((l) => l.trim() !== '')
+  if (!lines.length) return []
+  const sample = lines[0]
+  const semi = (sample.match(/;/g) || []).length
+  const comma = (sample.match(/,/g) || []).length
+  const delim = semi > comma ? ';' : ','
+
+  function parseLine(line) {
+    const out = []
+    let cur = ''
+    let inQuotes = false
+    for (let i = 0; i < line.length; i += 1) {
+      const ch = line[i]
+      if (ch === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          cur += '"'
+          i += 1
+        } else {
+          inQuotes = !inQuotes
+        }
+        continue
+      }
+      if (ch === delim && !inQuotes) {
+        out.push(cur.trim())
+        cur = ''
+        continue
+      }
+      cur += ch
+    }
+    out.push(cur.trim())
+    return out
+  }
+
+  return lines.map(parseLine)
+}
+
+function normHeader(h) {
+  return String(h || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '')
+}
+
+function colIndex(headerRow, aliases) {
+  const norms = headerRow.map(normHeader)
+  for (const alias of aliases) {
+    const i = norms.indexOf(normHeader(alias))
+    if (i >= 0) return i
+  }
+  return -1
+}
+
+function gradeRows(total, ok, details, passMsg, failMsg) {
+  const passed = ok === total
+  return {
+    passed,
+    score: Math.round((ok / total) * 100),
+    message: passed ? passMsg : failMsg.replace('{ok}', ok).replace('{total}', total),
+    details: details.slice(0, 6),
+  }
 }
 
 function cellNumber(cell) {
@@ -123,11 +199,10 @@ export const excelPacks = [
     summary:
       'Abra no Excel na Web e preencha as células amarelas com fórmulas (Total e Melhor preço).',
     steps: [
-      'Abra o exercício no Excel na Web pelo link do site.',
-      'Salve uma cópia no OneDrive e edite as células amarelas.',
+      'Abra o exercício no Excel na Web e edite as células amarelas.',
       'Na aba Cotacao: J =E2+F2 | K =H2+I2 | L =MIN(J2:K2) (arraste até a linha 11).',
-      'Arquivo → Baixar → Microsoft Excel (.xlsx).',
-      'Envie o arquivo no site para correção automática.',
+      'Fique na aba Cotacao → Arquivo → Exportar → Baixar como CSV.',
+      'Envie o CSV no site para correção.',
     ],
     filename: 'treino-compras-01-cotacao.xlsx',
     async build(ExcelJS) {
@@ -252,9 +327,63 @@ export const excelPacks = [
         score,
         message: passed
           ? `Perfeito! ${ok}/${expected.length} linhas corretas${formulaBonus ? ` · fórmulas detectadas em ${formulaBonus} linhas` : ''}.`
-          : `${ok}/${expected.length} linhas corretas. Corrija no Excel e envie de novo.`,
+          : `${ok}/${expected.length} linhas corretas. Corrija e envie de novo.`,
         details: details.slice(0, 5),
       }
+    },
+    verifyCsv(rows) {
+      if (!rows?.length) {
+        return { passed: false, score: 0, message: 'CSV vazio. Exporte de novo a aba Cotacao.' }
+      }
+      const header = rows[0]
+      let i1 = colIndex(header, ['Total1', 'total1'])
+      let i2 = colIndex(header, ['Total2', 'total2'])
+      let iM = colIndex(header, ['Melhor', 'melhor'])
+      // fallback: últimas 3 colunas da tabela de cotação
+      if (i1 < 0 || i2 < 0 || iM < 0) {
+        if (header.length >= 12) {
+          i1 = 9
+          i2 = 10
+          iM = 11
+        } else {
+          return {
+            passed: false,
+            score: 0,
+            message: 'Não achei as colunas Total1/Total2/Melhor. Exporte a aba Cotacao como CSV.',
+          }
+        }
+      }
+      const expected = this.expected()
+      const dataRows = rows.slice(1).filter((r) => r.some((c) => String(c || '').trim() !== ''))
+      let ok = 0
+      const details = []
+      for (let i = 0; i < expected.length; i += 1) {
+        const row = dataRows[i]
+        if (!row) {
+          details.push(`Falta a linha ${i + 2}`)
+          continue
+        }
+        const t1 = parseNumberLoose(row[i1])
+        const t2 = parseNumberLoose(row[i2])
+        const mel = parseNumberLoose(row[iM])
+        const rowOk =
+          numClose(t1, expected[i].total1) &&
+          numClose(t2, expected[i].total2) &&
+          numClose(mel, expected[i].melhor)
+        if (rowOk) ok += 1
+        else {
+          details.push(
+            `Linha ${i + 2}: esperado Total1=${expected[i].total1}, Total2=${expected[i].total2}, Melhor=${expected[i].melhor}`,
+          )
+        }
+      }
+      return gradeRows(
+        expected.length,
+        ok,
+        details,
+        `CSV aprovado! ${ok}/${expected.length} linhas corretas.`,
+        `{ok}/{total} linhas corretas no CSV. Corrija e envie de novo.`,
+      )
     },
   },
   {
@@ -266,8 +395,8 @@ export const excelPacks = [
     steps: [
       'Abra o exercício no Excel na Web e salve uma cópia.',
       'Aba Pedidos: em C2 use =PROCV(A2;Base!A:D;4;FALSO) e arraste.',
-      'Arquivo → Baixar → Microsoft Excel (.xlsx).',
-      'Envie o arquivo no site para correção.',
+      'Fique na aba Pedidos → Arquivo → Exportar → Baixar como CSV.',
+      'Envie o CSV no site para correção.',
     ],
     filename: 'treino-compras-02-procv.xlsx',
     async build(ExcelJS) {
@@ -353,6 +482,45 @@ export const excelPacks = [
         details: details.slice(0, 5),
       }
     },
+    verifyCsv(rows) {
+      if (!rows?.length) {
+        return { passed: false, score: 0, message: 'CSV vazio. Exporte a aba Pedidos.' }
+      }
+      const header = rows[0]
+      let iPreco = colIndex(header, ['Preco', 'Preço', 'preco'])
+      if (iPreco < 0) {
+        iPreco = header.length >= 3 ? 2 : -1
+      }
+      if (iPreco < 0) {
+        return {
+          passed: false,
+          score: 0,
+          message: 'Não achei a coluna Preco. Exporte a aba Pedidos como CSV.',
+        }
+      }
+      const order = ['003', '001', '005', '002', '007', '004', '008', '006']
+      const dataRows = rows.slice(1).filter((r) => r.some((c) => String(c || '').trim() !== ''))
+      let ok = 0
+      const details = []
+      order.forEach((code, i) => {
+        const expected = LOOKUP.find((l) => l[0] === code)[3]
+        const row = dataRows[i]
+        if (!row) {
+          details.push(`Falta a linha do código ${code}`)
+          return
+        }
+        const got = parseNumberLoose(row[iPreco])
+        if (numClose(got, expected)) ok += 1
+        else details.push(`Linha ${i + 2} (código ${code}): esperado ${expected}`)
+      })
+      return gradeRows(
+        order.length,
+        ok,
+        details,
+        `CSV aprovado! PROCV ok — ${ok}/${order.length} preços corretos.`,
+        `{ok}/{total} corretos no CSV. Confira PROCV e exporte de novo a aba Pedidos.`,
+      )
+    },
   },
   {
     id: 'decisao',
@@ -363,8 +531,8 @@ export const excelPacks = [
     steps: [
       'Abra no Excel na Web, salve uma cópia e preencha F, G e H.',
       'H2: =SE(F2<G2;"A";"B")',
-      'Arquivo → Baixar → Microsoft Excel (.xlsx).',
-      'Envie o arquivo no site para correção.',
+      'Fique na aba Decisao → Arquivo → Exportar → Baixar como CSV.',
+      'Envie o CSV no site para correção.',
     ],
     filename: 'treino-compras-03-decisao.xlsx',
     async build(ExcelJS) {
@@ -444,13 +612,99 @@ export const excelPacks = [
         details: details.slice(0, 5),
       }
     },
+    verifyCsv(rows) {
+      if (!rows?.length) {
+        return { passed: false, score: 0, message: 'CSV vazio. Exporte a aba Decisao.' }
+      }
+      const header = rows[0]
+      let iTa = colIndex(header, ['TotalA', 'totala'])
+      let iTb = colIndex(header, ['TotalB', 'totalb'])
+      let iWin = colIndex(header, ['Vencedor', 'vencedor'])
+      if (iTa < 0 || iTb < 0 || iWin < 0) {
+        if (header.length >= 8) {
+          iTa = 5
+          iTb = 6
+          iWin = 7
+        } else {
+          return {
+            passed: false,
+            score: 0,
+            message: 'Não achei TotalA/TotalB/Vencedor. Exporte a aba Decisao como CSV.',
+          }
+        }
+      }
+      const expected = [
+        { ta: 430, tb: 430, win: 'B' },
+        { ta: 120, tb: 110, win: 'B' },
+        { ta: 725, tb: 710, win: 'B' },
+        { ta: 320, tb: 320, win: 'B' },
+        { ta: 60, tb: 64, win: 'A' },
+        { ta: 123, tb: 122.5, win: 'B' },
+      ]
+      const dataRows = rows.slice(1).filter((r) => r.some((c) => String(c || '').trim() !== ''))
+      let ok = 0
+      const details = []
+      expected.forEach((exp, i) => {
+        const row = dataRows[i]
+        if (!row) {
+          details.push(`Falta a linha ${i + 2}`)
+          return
+        }
+        const ta = parseNumberLoose(row[iTa])
+        const tb = parseNumberLoose(row[iTb])
+        const win = String(row[iWin] || '')
+          .trim()
+          .toUpperCase()
+        const good = numClose(ta, exp.ta) && numClose(tb, exp.tb) && win === exp.win
+        if (good) ok += 1
+        else details.push(`Linha ${i + 2}: TotalA=${exp.ta}, TotalB=${exp.tb}, Vencedor=${exp.win}`)
+      })
+      return gradeRows(
+        expected.length,
+        ok,
+        details,
+        'CSV aprovado! Decisão correta em todas as linhas.',
+        `{ok}/{total} linhas ok no CSV. Em empate, SE(F<G;"A";"B") escolhe B.`,
+      )
+    },
   },
 ]
 
 export async function verifyUploadedFile(pack, file) {
-  const ExcelJS = await loadExcelJS()
-  const wb = new ExcelJS.Workbook()
-  const data = await file.arrayBuffer()
-  await wb.xlsx.load(data)
-  return pack.verify(wb)
+  const name = (file?.name || '').toLowerCase()
+  const isCsv = name.endsWith('.csv') || file?.type === 'text/csv' || file?.type === 'text/plain'
+  const isOds = name.endsWith('.ods')
+
+  if (isOds) {
+    return {
+      passed: false,
+      score: 0,
+      message:
+        'ODS ainda não é aceito na correção. Use Arquivo → Exportar → Baixar como CSV (ou CSV UTF-8) e envie o CSV.',
+    }
+  }
+
+  if (isCsv) {
+    if (typeof pack.verifyCsv !== 'function') {
+      return { passed: false, score: 0, message: 'Este exercício ainda não aceita CSV.' }
+    }
+    const text = await file.text()
+    const rows = parseCsvText(text)
+    return pack.verifyCsv(rows)
+  }
+
+  // .xlsx e similares
+  try {
+    const ExcelJS = await loadExcelJS()
+    const wb = new ExcelJS.Workbook()
+    const data = await file.arrayBuffer()
+    await wb.xlsx.load(data)
+    return pack.verify(wb)
+  } catch (err) {
+    return {
+      passed: false,
+      score: 0,
+      message: `Não consegui ler este arquivo. Exporte como CSV (Arquivo → Exportar → Baixar como CSV) e envie de novo. (${err.message})`,
+    }
+  }
 }
