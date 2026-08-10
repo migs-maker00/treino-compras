@@ -63,7 +63,7 @@ function EditableCell({ addr, raw, displayValue, onChange }) {
         <input
           ref={inputRef}
           value={draft}
-          placeholder="Digite a fórmula, ex: =E2+F2"
+          placeholder="Digite a fórmula, ex: =C2*E2+F2"
           aria-label={`Editar ${addr}`}
           onChange={(e) => setDraft(e.target.value)}
           onBlur={() => {

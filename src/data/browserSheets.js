@@ -4,7 +4,7 @@ export const browserSheets = [
   {
     id: 'cotacao',
     title: 'Cotação (no navegador)',
-    help: 'Nas células amarelas, digite fórmulas como no Excel. Ex.: =E2+F2 e =MIN(J2:K2)',
+    help: 'Nas células amarelas, digite fórmulas como no Excel. Ex.: =C2*E2+F2 e =MIN(J2:K2)',
     headers: ['Produto', 'Spec', 'Qtd', 'Forn1', 'Preco1', 'Frete1', 'Forn2', 'Preco2', 'Frete2', 'Total1', 'Total2', 'Melhor'],
     // row 0 = header visually; data starts row 1 in 0-based sheet row index for body
     rows: [
@@ -21,18 +21,19 @@ export const browserSheets = [
     ],
     editableCols: [9, 10, 11], // J K L (0-based)
     hints: [
-      'J2: =E2+F2',
-      'K2: =H2+I2',
-      'L2: =MIN(J2:K2)  ou  =MÍNIMO(J2:K2)',
+      'J2: =C2*E2+F2   (Qtd × Preço1 + Frete1)',
+      'K2: =C2*H2+I2   (Qtd × Preço2 + Frete2)',
+      'L2: =MIN(J2:K2)  ou  =MÍNIMO(J2:K2)  — menor total (número)',
       'Depois arraste a lógica mentalmente para as outras linhas (copie ajustando o número da linha).',
     ],
     expected(row) {
+      const qtd = row[2]
       const preco1 = row[4]
       const frete1 = row[5]
       const preco2 = row[7]
       const frete2 = row[8]
-      const t1 = preco1 + frete1
-      const t2 = preco2 + frete2
+      const t1 = qtd * preco1 + frete1
+      const t2 = qtd * preco2 + frete2
       return [t1, t2, Math.min(t1, t2)]
     },
   },

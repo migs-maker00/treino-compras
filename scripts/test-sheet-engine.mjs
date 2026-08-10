@@ -12,15 +12,16 @@ function assert(cond, msg) {
 // 1) Fórmulas básicas
 {
   const data = {
+    C2: 100,
     E2: 0.95,
     F2: 25,
     H2: 1.1,
     I2: 0,
-    J2: '=E2+F2',
-    K2: '=H2+I2',
+    J2: '=C2*E2+F2',
+    K2: '=C2*H2+I2',
     L2: '=MIN(J2:K2)',
     L3: '=MÍNIMO(J2:K2)',
-    A2: '003',
+    A10: '003',
     A14: '001',
     B14: 'x',
     C14: 'y',
@@ -29,8 +30,8 @@ function assert(cond, msg) {
     B15: 'luva',
     C15: 'z',
     D15: 7.2,
-    C2: '=PROCV(A2;A14:D15;4;0)',
-    C3: '=VLOOKUP(A2;A14:D15;4;FALSE)',
+    C10: '=PROCV(A10;A14:D15;4;0)',
+    C11: '=VLOOKUP(A10;A14:D15;4;FALSE)',
     B4: 400,
     C4: 30,
     D4: 350,
@@ -41,12 +42,12 @@ function assert(cond, msg) {
     H5: '=IF(F4<=G4;"X";"Y")',
   }
   const d = evaluateSheet(data)
-  assert(d.J2 === 25.95, `J2 soma ${d.J2}`)
-  assert(d.K2 === 1.1, `K2 soma ${d.K2}`)
-  assert(d.L2 === 1.1, `L2 MIN ${d.L2}`)
-  assert(d.L3 === 1.1, `L3 MÍNIMO ${d.L3}`)
-  assert(Number(d.C2) === 7.2, `C2 PROCV ${d.C2}`)
-  assert(Number(d.C3) === 7.2, `C3 VLOOKUP ${d.C3}`)
+  assert(d.J2 === 120, `J2 total ${d.J2}`)
+  assert(Math.abs(d.K2 - 110) < 0.02, `K2 total ${d.K2}`)
+  assert(Math.abs(d.L2 - 110) < 0.02, `L2 MIN ${d.L2}`)
+  assert(Math.abs(d.L3 - 110) < 0.02, `L3 MÍNIMO ${d.L3}`)
+  assert(Number(d.C10) === 7.2, `C10 PROCV ${d.C10}`)
+  assert(Number(d.C11) === 7.2, `C11 VLOOKUP ${d.C11}`)
   assert(d.F4 === 430 && d.G4 === 430, `totais ${d.F4}/${d.G4}`)
   assert(d.H4 === 'B', `SE empate escolhe B, veio ${d.H4}`)
   assert(d.H5 === 'X', `IF <= ${d.H5}`)
@@ -65,8 +66,8 @@ function assert(cond, msg) {
     row.forEach((val, c) => {
       data[`${indexToCol(c)}${r}`] = val
     })
-    data[`J${r}`] = `=E${r}+F${r}`
-    data[`K${r}`] = `=H${r}+I${r}`
+    data[`J${r}`] = `=C${r}*E${r}+F${r}`
+    data[`K${r}`] = `=C${r}*H${r}+I${r}`
     data[`L${r}`] = `=MIN(J${r}:K${r})`
   })
   const d = evaluateSheet(data)

@@ -143,6 +143,33 @@ function colIndex(headerRow, aliases) {
   return -1
 }
 
+function money(n) {
+  return Math.round(Number(n) * 1000) / 1000
+}
+
+function melhorMatches(got, melhorNum, forn1, forn2, total1, total2) {
+  if (numClose(got, melhorNum)) return true
+  const text = String(got ?? '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+  if (!text) return false
+  const a = String(forn1 || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+  const b = String(forn2 || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+  if (numClose(total1, total2)) return text === a || text === b
+  if (total1 < total2) return text === a
+  return text === b
+}
+
 function gradeRows(total, ok, details, passMsg, failMsg) {
   const passed = ok === total
   return {
@@ -200,7 +227,8 @@ export const excelPacks = [
       'Abra no Excel na Web e preencha as células amarelas com fórmulas (Total e Melhor preço).',
     steps: [
       'Abra o exercício no Excel na Web e edite as células amarelas.',
-      'Na aba Cotacao: J =E2+F2 | K =H2+I2 | L =MIN(J2:K2) (arraste até a linha 11).',
+      'Na aba Cotacao: J =C2*E2+F2 | K =C2*H2+I2 | L =MIN(J2:K2) (arraste até a linha 11).',
+      'Melhor = o menor total (número), não o nome do fornecedor.',
       'Fique na aba Cotacao → Arquivo → Exportar → Baixar como CSV.',
       'Envie o CSV no site para correção.',
     ],
@@ -218,9 +246,9 @@ export const excelPacks = [
         '',
         '1) Vá para a aba Cotacao',
         '2) Nas células AMARELAS, digite fórmulas (não copie números na mão)',
-        '3) Coluna J (Total1): =E2+F2  e arraste até a linha 11',
-        '4) Coluna K (Total2): =H2+I2  e arraste até a linha 11',
-        '5) Coluna L (Melhor): =MÍNIMO(J2:K2)  ou  =MIN(J2:K2)',
+        '3) Coluna J (Total1): =C2*E2+F2  (Qtd × Preço1 + Frete1) e arraste até a linha 11',
+        '4) Coluna K (Total2): =C2*H2+I2  (Qtd × Preço2 + Frete2) e arraste até a linha 11',
+        '5) Coluna L (Melhor): =MÍNIMO(J2:K2)  ou  =MIN(J2:K2)  — o menor TOTAL (número)',
         '6) Se abriu só em visualização, use Editar no navegador / Salvar uma cópia',
       ].forEach((line, i) => {
         info.getCell(i + 1, 1).value = line
@@ -263,18 +291,20 @@ export const excelPacks = [
       const tip = wb.addWorksheet('Dicas')
       tip.getColumn(1).width = 80
       tip.addRow(['Se travar, use estas fórmulas na linha 2 e arraste:'])
-      tip.addRow(['J2', '=E2+F2'])
-      tip.addRow(['K2', '=H2+I2'])
+      tip.addRow(['J2', '=C2*E2+F2'])
+      tip.addRow(['K2', '=C2*H2+I2'])
       tip.addRow(['L2', '=MIN(J2:K2)   (no Excel PT-BR também pode =MÍNIMO(J2:K2))'])
       tip.addRow([''])
+      tip.addRow(['Total = quantidade × preço unitário + frete.'])
+      tip.addRow(['Melhor = menor total (número), não o nome do fornecedor.'])
       tip.addRow(['Não abra a aba Gabarito antes de tentar.'])
 
       const gab = wb.addWorksheet('Gabarito')
       gab.addRow(headers)
       styleHeader(gab.getRow(1))
       PRODUCTS.forEach((p) => {
-        const total1 = p[4] + p[5]
-        const total2 = p[7] + p[8]
+        const total1 = money(p[2] * p[4] + p[5])
+        const total2 = money(p[2] * p[7] + p[8])
         gab.addRow([...p, total1, total2, Math.min(total1, total2)])
       })
       // Visível, mas no fim — só consulte se travar
@@ -285,9 +315,15 @@ export const excelPacks = [
     },
     expected() {
       return PRODUCTS.map((p) => {
-        const total1 = p[4] + p[5]
-        const total2 = p[7] + p[8]
-        return { total1, total2, melhor: Math.min(total1, total2) }
+        const total1 = money(p[2] * p[4] + p[5])
+        const total2 = money(p[2] * p[7] + p[8])
+        return {
+          total1,
+          total2,
+          melhor: Math.min(total1, total2),
+          forn1: p[3],
+          forn2: p[6],
+        }
       })
     },
     async verify(wb) {
@@ -303,11 +339,20 @@ export const excelPacks = [
         const row = i + 2
         const t1 = cellNumber(ws.getCell(row, 10))
         const t2 = cellNumber(ws.getCell(row, 11))
-        const mel = cellNumber(ws.getCell(row, 12))
+        const melCell = ws.getCell(row, 12)
+        const melNum = cellNumber(melCell)
+        const melText = cellText(melCell)
         const rowOk =
           numClose(t1, expected[i].total1) &&
           numClose(t2, expected[i].total2) &&
-          numClose(mel, expected[i].melhor)
+          melhorMatches(
+            melNum ?? melText,
+            expected[i].melhor,
+            expected[i].forn1,
+            expected[i].forn2,
+            expected[i].total1,
+            expected[i].total2,
+          )
         const hasF =
           cellHasFormula(ws.getCell(row, 10)) ||
           cellHasFormula(ws.getCell(row, 11)) ||
@@ -316,7 +361,7 @@ export const excelPacks = [
         if (hasF) formulaBonus += 1
         if (!rowOk) {
           details.push(
-            `Linha ${row}: esperado Total1=${expected[i].total1}, Total2=${expected[i].total2}, Melhor=${expected[i].melhor}`,
+            `Linha ${row}: esperado Total1=${expected[i].total1}, Total2=${expected[i].total2}, Melhor=${expected[i].melhor} (ou fornecedor mais barato)`,
           )
         }
       }
@@ -365,15 +410,22 @@ export const excelPacks = [
         }
         const t1 = parseNumberLoose(row[i1])
         const t2 = parseNumberLoose(row[i2])
-        const mel = parseNumberLoose(row[iM])
+        const melRaw = row[iM]
         const rowOk =
           numClose(t1, expected[i].total1) &&
           numClose(t2, expected[i].total2) &&
-          numClose(mel, expected[i].melhor)
+          melhorMatches(
+            melRaw,
+            expected[i].melhor,
+            expected[i].forn1,
+            expected[i].forn2,
+            expected[i].total1,
+            expected[i].total2,
+          )
         if (rowOk) ok += 1
         else {
           details.push(
-            `Linha ${i + 2}: esperado Total1=${expected[i].total1}, Total2=${expected[i].total2}, Melhor=${expected[i].melhor}`,
+            `Linha ${i + 2}: esperado Total1=${expected[i].total1}, Total2=${expected[i].total2}, Melhor=${expected[i].melhor} (ou fornecedor mais barato)`,
           )
         }
       }
