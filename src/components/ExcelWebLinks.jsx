@@ -4,7 +4,7 @@ import { excelPacks, publicPackUrl, verifyUploadedFile } from '../lib/excelPacks
 const EXCEL_WEB_LAUNCH = 'https://www.microsoft365.com/launch/excel'
 const EXCEL_WEB_HOME = 'https://excel.cloud.microsoft/'
 /** Evita cache do Excel Online / CDN com arquivo antigo. */
-const PACK_CACHE_BUST = '20260810b'
+const PACK_CACHE_BUST = '20260810c'
 
 function absoluteFileUrl(filename) {
   const path = `${publicPackUrl(filename)}?v=${PACK_CACHE_BUST}`

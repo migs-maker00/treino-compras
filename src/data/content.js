@@ -157,7 +157,7 @@ export const excelFormulas = [
   {
     name: '=SE() aninhado',
     use: 'Decidir A, B ou Empate quando os totais empatam.',
-    example: '=SE(F2<G2;"A";SE(F2>G2;"B";"Empate"))',
+    example: '=SE(F2=G2;"Empate";SE(F2<G2;"A";"B"))',
   },
   { name: '=CONT.SE()', use: 'Contar quantos itens um fornecedor tem.', example: '=CONT.SE(C:C;"Empresa A")' },
   { name: '=PROCV()', use: 'Buscar preço/fornecedor pelo código do produto.', example: '=PROCV(A2;Tabela;4;FALSO)' },

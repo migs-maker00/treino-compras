@@ -603,7 +603,7 @@ export const excelPacks = [
     steps: [
       'Abra no Excel na Web (link atualizado do site), salve uma cópia e preencha F, G e H.',
       'São 8 produtos nas linhas 2 a 9 (inclui Óculos e Abraçadeira no final).',
-      'H2: =SE(F2<G2;"A";SE(F2>G2;"B";"Empate")) — arraste até H9.',
+      'H2: =SE(F2=G2;"Empate";SE(F2<G2;"A";"B")) — arraste até H9.',
       'Fique na aba Decisao → Arquivo → Exportar → Baixar como CSV.',
       'Envie o CSV no site para correção.',
     ],
@@ -617,11 +617,11 @@ export const excelPacks = [
         'Preencha F (TotalA), G (TotalB) e H (Vencedor) nas linhas 2 a 9 (8 produtos).',
         'Linha 8 = Óculos proteção | Linha 9 = Abraçadeira',
         '',
-        'Fórmula do vencedor (PT-BR):',
-        '=SE(F2<G2;"A";SE(F2>G2;"B";"Empate"))',
+        'Fórmula do vencedor (PT-BR) — copie exatamente:',
+        '=SE(F2=G2;"Empate";SE(F2<G2;"A";"B"))',
         '',
-        'Em inglês: =IF(F2<G2,"A",IF(F2>G2,"B","Empate"))',
-        'Se TotalA = TotalB, o Excel escreve Empate (não escolhe A nem B).',
+        'Em inglês: =IF(F2=G2,"Empate",IF(F2<G2,"A","B"))',
+        '1º: se totais iguais → Empate | 2º: se A menor → A | senão → B',
         'Se estiver só visualizando: Editar no navegador / Salvar uma cópia.',
       ].forEach((line, i) => {
         info.getCell(i + 1, 1).value = line
@@ -698,7 +698,7 @@ export const excelPacks = [
         score: Math.round((ok / expected.length) * 100),
         message: passed
           ? 'Decisão correta — inclusive nos empates!'
-          : `${ok}/${expected.length} linhas ok. Use =SE(F2<G2;"A";SE(F2>G2;"B";"Empate"))`,
+          : `${ok}/${expected.length} linhas ok. Use =SE(F2=G2;"Empate";SE(F2<G2;"A";"B"))`,
         details: details.slice(0, 5),
       }
     },

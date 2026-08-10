@@ -28,7 +28,7 @@ function assert(cond, msg) {
     E4: 80,
     F4: '=B4+C4',
     G4: '=D4+E4',
-    H4: '=SE(F4<G4;"A";SE(F4>G4;"B";"Empate"))',
+    H4: '=SE(F4=G4;"Empate";SE(F4<G4;"A";"B"))',
     B5: 0.15,
     C5: 0.15,
     D5: 0.2,
@@ -101,7 +101,7 @@ fillAndCheck('procv', (data, r) => {
 fillAndCheck('decisao', (data, r) => {
   data[`F${r}`] = `=B${r}+C${r}`
   data[`G${r}`] = `=D${r}+E${r}`
-  data[`H${r}`] = `=SE(F${r}<G${r};"A";SE(F${r}>G${r};"B";"Empate"))`
+  data[`H${r}`] = `=SE(F${r}=G${r};"Empate";SE(F${r}<G${r};"A";"B"))`
 })
 
 fillAndCheck('desempate', (data, r) => {

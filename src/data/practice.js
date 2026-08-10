@@ -51,6 +51,10 @@ export const formulaDrills = [
     prompt: 'Se F2 < G2 mostre A; se F2 > G2 mostre B; se empatar mostre Empate.',
     hint: 'SE aninhado (um SE dentro do outro).',
     answers: [
+      '=se(f2=g2;"empate";se(f2<g2;"a";"b"))',
+      '=if(f2=g2;"empate";if(f2<g2;"a";"b"))',
+      '=se(f2=g2;"Empate";se(f2<g2;"A";"B"))',
+      '=if(f2=g2,"Empate",if(f2<g2,"A","B"))',
       '=se(f2<g2;"a";se(f2>g2;"b";"empate"))',
       '=if(f2<g2;"a";if(f2>g2;"b";"empate"))',
       '=se(f2<g2;"A";se(f2>g2;"B";"Empate"))',

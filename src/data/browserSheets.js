@@ -97,7 +97,7 @@ export const browserSheets = [
     hints: [
       'F2: =B2+C2',
       'G2: =D2+E2',
-      'H2: =SE(F2<G2;"A";SE(F2>G2;"B";"Empate"))',
+      'H2: =SE(F2=G2;"Empate";SE(F2<G2;"A";"B"))',
     ],
     expected(row) {
       const ta = row[1] + row[2]
